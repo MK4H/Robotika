@@ -93,8 +93,8 @@ public:
 
   void forward(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 + max_ms * percent/100.0f));
-    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
+    left_.writeMicroseconds((int)(1500 + max_ms * (percent/100.0f)));
+    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
   }
 
   void backward(int percent) {
@@ -113,19 +113,19 @@ public:
 
   void left_speed(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 + max_ms * percent/100.0f));
+    left_.writeMicroseconds((int)(1500 + max_ms * (percent/100.0f)));
     
   }
 
   void right_speed(int percent) {
     percent = cap_percent(percent);
-    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
+    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
   }
 
   void left_inplace(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
-    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
+    left_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
+    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
 
   }
 
@@ -161,7 +161,7 @@ Button button;
 int state = stop;
 bool left_mark = true;
 
-const int forward_speed = 20;
+const int forward_speed = 100;
 const int turning_speed = 0;
 const int ip_turning_speed = 50;
 
@@ -245,7 +245,6 @@ void loop() {
   }
  
   drive_left();
-  delay(100);
   return;
   if (left_mark){
     drive_left();
