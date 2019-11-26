@@ -58,23 +58,23 @@ public:
     state_ = PIND;
   }
 
-  bool get_left() {
+  bool left_white() {
     return state_ & (1 << 3); 
   }
 
-  bool get_c_left(){
+  bool cleft_white(){
     return state_ & (1 << 4); 
   }
 
-  bool get_center() {
+  bool center_white() {
     return state_ & (1 << 5); 
   }
 
-  bool get_c_right() {
+  bool cright_white() {
     return state_ & (1 << 6); 
   }
 
-  bool get_right() {
+  bool right_white() {
     return state_ & (1 << 7); 
   }
 private:
@@ -84,7 +84,6 @@ private:
 class Movement {
 public:
   Movement() {
-    turning_ = false;
   }
 
   void attach() {
@@ -96,43 +95,54 @@ public:
     percent = cap_percent(percent);
     left_.writeMicroseconds(1500 + max_ms * percent);
     right_.writeMicroseconds(1500 - max_ms * percent);
-    turning_ = false;
   }
 
   void backward(int percent) {
     forward(-percent);
   }
 
-  void left_move()
-
-  void left() {
-    left_.writeMicroseconds(500);
-    right_.writeMicroseconds(500);
-    turning_ = true;
+  void left_forward(int forw_perc, int left_perc) {
+    forward(forw_perc);
+    left_speed(left_perc);
   }
 
-  void right() {
-    left_.writeMicroseconds(2500);
-    right_.writeMicroseconds(2500);
-    turning_ = true;
+  void right_forward(int forw_perc, int right_perc) {
+    forward(forw_perc);
+    right_speed(right_perc);
   }
 
-  bool is_turning() {
-    return turning_;
+  void left_speed(int percent) {
+    percent = cap_percent(percent);
+    left_.writeMicroseconds(1500 + max_ms * percent);
+    
   }
 
+  void right_speed(int percent) {
+    percent = cap_percent(percent);
+    right_.writeMicroseconds(1500 - max_ms * percent);
+  }
+
+  void left_inplace(int percent) {
+    percent = cap_percent(percent);
+    left_.writeMicroseconds(1500 - max_ms * percent);
+    right_.writeMicroseconds(1500 - max_ms * percent);
+
+  }
+
+  void right_inplace(int percent) {
+    left_inplace(-percent);
+  }
+  
   void stop() {
     left_.writeMicroseconds(1500);
     right_.writeMicroseconds(1500);
-    turning_ = false;
   }
 private:
   Servo left_, right_;
-  bool turning_;
 
   const int max_ms = 500;
 
-  int cap_precent(int percent) {
+  int cap_percent(int percent) {
     if (percent > 100) {
       return 100;
     }
@@ -144,16 +154,6 @@ private:
   }
 };
 
-class SideSensors {
-public:
-
-
-
-private:
-
-
-
-  };
 
 Movement mov;
 Sensors sens;
@@ -162,26 +162,26 @@ int state = stop;
 bool left_mark = true;
 
 void drive_left() {
-  if (!sens.get_center() && sens.get_c_left()) {
-    mov.forward_right();
+  if (!sens.cleft_white()) {
+    mov.left_forward(80,30);
   }
-  else if (!sens.get_c_left()){
-    mov.left();
+  else if (sens.center_white()) {
+    mov.right_forward(80,30);
   }
   else {
-    mov.left();
+    mov.forward(100);
   }
 }
 
 void drive_right() {
-  if (!sens.get_center() && sens.get_c_right()) {
-    mov.forward_left();
+  if (!sens.cright_white()) {
+    mov.right_forward(80,30);
   }
-  else if (!sens.get_c_right()) {
-    mov.right();
+  else if (sens.center_white()) {
+    mov.left_forward(80,30);
   }
   else {
-    mov.right();
+    mov.forward(100);
   }
 }
 
@@ -220,11 +220,11 @@ void loop() {
   // main algorithm
 
 
-  if (!sens.get_left()) {
+  if (!sens.left_white()) {
     left_mark = true;
   }
 
-  if (!sens.get_right()) {
+  if (!sens.right_white()) {
     left_mark = false;
   }
  
