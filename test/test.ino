@@ -92,23 +92,18 @@ public:
     right_.attach(right_pin,500,2500);
   }
 
-  void forward() {
-    left_.writeMicroseconds(2500);
-    right_.writeMicroseconds(500);
+  void forward(int percent) {
+    percent = cap_percent(percent);
+    left_.writeMicroseconds(1500 + max_ms * percent);
+    right_.writeMicroseconds(1500 - max_ms * percent);
     turning_ = false;
   }
 
-  void forward_left() {
-    left_.writeMicroseconds(2000);
-    right_.writeMicroseconds(500);
-    turning_ = false;
+  void backward(int percent) {
+    forward(-percent);
   }
 
-  void forward_right() {
-    left_.writeMicroseconds(2500);
-    right_.writeMicroseconds(1000);
-    turning_ = false;
-  }
+  void left_move()
 
   void left() {
     left_.writeMicroseconds(500);
@@ -134,6 +129,19 @@ public:
 private:
   Servo left_, right_;
   bool turning_;
+
+  const int max_ms = 500;
+
+  int cap_precent(int percent) {
+    if (percent > 100) {
+      return 100;
+    }
+
+    if (percent < -100) {
+      return -100;
+    }
+    return percent;
+  }
 };
 
 class SideSensors {
