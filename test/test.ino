@@ -93,8 +93,8 @@ public:
 
   void forward(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds(1500 + max_ms * percent);
-    right_.writeMicroseconds(1500 - max_ms * percent);
+    left_.writeMicroseconds((int)(1500 + max_ms * percent/100.0f));
+    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
   }
 
   void backward(int percent) {
@@ -102,30 +102,30 @@ public:
   }
 
   void left_forward(int forw_perc, int left_perc) {
-    forward(forw_perc);
     left_speed(left_perc);
+    right_speed(forw_perc);
   }
 
   void right_forward(int forw_perc, int right_perc) {
-    forward(forw_perc);
+    left_speed(forw_perc);
     right_speed(right_perc);
   }
 
   void left_speed(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds(1500 + max_ms * percent);
+    left_.writeMicroseconds((int)(1500 + max_ms * percent/100.0f));
     
   }
 
   void right_speed(int percent) {
     percent = cap_percent(percent);
-    right_.writeMicroseconds(1500 - max_ms * percent);
+    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
   }
 
   void left_inplace(int percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds(1500 - max_ms * percent);
-    right_.writeMicroseconds(1500 - max_ms * percent);
+    left_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
+    right_.writeMicroseconds((int)(1500 - max_ms * percent/100.0f));
 
   }
 
@@ -161,27 +161,40 @@ Button button;
 int state = stop;
 bool left_mark = true;
 
+const int forward_speed = 20;
+const int turning_speed = 0;
+const int ip_turning_speed = 50;
+
 void drive_left() {
-  if (!sens.cleft_white()) {
-    mov.left_forward(80,30);
+  if (!sens.center_white() && sens.cleft_white() & sens.cright_white()) {
+    mov.forward(forward_speed);
   }
-  else if (sens.center_white()) {
-    mov.right_forward(80,30);
+  else if (!sens.center_white() && !sens.cleft_white()){
+    mov.left_forward(forward_speed, turning_speed);
+  }
+  else if (!sens.center_white() && !sens.cright_white()){
+    mov.right_forward(forward_speed, turning_speed);
+  }
+  else if (!sens.cleft_white()) {
+    mov.left_inplace(ip_turning_speed);
+  }
+  else if (!sens.cright_white()){
+    mov.right_inplace(ip_turning_speed);
   }
   else {
-    mov.forward(100);
+    mov.right_inplace(ip_turning_speed);
   }
 }
 
 void drive_right() {
-  if (!sens.cright_white()) {
-    mov.right_forward(80,30);
+  if (!sens.center_white() && sens.cright_white()) {
+    mov.left_forward(forward_speed, forward_speed/2);
   }
-  else if (sens.center_white()) {
-    mov.left_forward(80,30);
+  else if (!sens.cright_white()) {
+    mov.right_inplace(turning_speed);
   }
   else {
-    mov.forward(100);
+    mov.right_inplace(turning_speed);
   }
 }
 
@@ -211,6 +224,9 @@ void loop() {
     }
   }
 
+  // cleanup
+  button.reset_memory();
+
   // movement disabled
   if (state == stop) {
     mov.stop();
@@ -228,7 +244,9 @@ void loop() {
     left_mark = false;
   }
  
-  
+  drive_left();
+  delay(100);
+  return;
   if (left_mark){
     drive_left();
   }
@@ -236,6 +254,5 @@ void loop() {
     drive_right();
   }
 
-  // cleanup
-  button.reset_memory();
+
 }
