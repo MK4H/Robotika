@@ -176,8 +176,6 @@ Movement mov;
 Sensors sens;
 Button button;
 int state = st_stop;
-int line_pos = ln_center;
-int action = act_forward;
 bool dioda = false;
 float error = 0;
 float backerror = 0;
