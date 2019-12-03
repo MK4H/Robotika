@@ -6,7 +6,7 @@ const int button_pin = 2;
 const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
-enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 80, faster = 100};
+enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 
 class Button {
 public:
@@ -175,22 +175,35 @@ Sensors sens;
 Button button;
 int state = st_stop;
 bool dioda = false;
-
+float error = 0;
+float backerror = 0;
+int state2 = 0;
 void drive_left() {
-  if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) {
+  if (!sens.center_white() && sens.cleft_white()) {
+    state2 = 0;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    mov.left_forward(faster, stopped);
-  }
-  else if (!sens.center_white() && !sens.cright_white()){
-    mov.right_forward(faster, stopped);
+    if (state2 != 1)
+    {
+      state2 = 1;
+      error = 60;
+      backerror = 0;
+    }
+    mov.left_forward(error, backerror);
+    error += 10;
+    backerror -= 10;
   }
   else if (!sens.cleft_white()) {
-    mov.left_forward(faster, stopped);
-  }
-  else if (!sens.cright_white()){
-    mov.right_forward(faster, stopped);
+    if (state2 != 2)
+    {
+      state2 = 2;
+      error = 60;
+      backerror = 0;
+    }
+    mov.left_forward(error, backerror);
+    error += 10;
+    backerror -= 10;
   }
   else {
     mov.right_inplace(slow);
@@ -198,15 +211,7 @@ void drive_left() {
 }
 
 void drive_right() {
-  if (!sens.center_white() && sens.cright_white()) {
-    mov.left_forward(fast, slow);
-  }
-  else if (!sens.cright_white()) {
-    mov.right_inplace(slow);
-  }
-  else {
-    mov.right_inplace(slow);
-  }
+  drive_left();
 }
 
 void setup() {
