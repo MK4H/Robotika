@@ -6,6 +6,8 @@ const int button_pin = 2;
 const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
+enum line {ln_center, ln_left, ln_right};
+enum action {act_turning_left, act_turning_right, act_forward};
 enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 80, faster = 100};
 
 class Button {
@@ -27,13 +29,15 @@ public:
         else if(is_pressed_ && !is_pressed_now)
         {
           was_unpressed_ = true;
+
+          unsigned long CurrentTime = millis();
+          if (CurrentTime - PressedTime > 3000){
+            was_long_pressed_ = true;
+          }
+
         }
 
-        unsigned long CurrentTime = millis();
-        if (CurrentTime - PressedTime > 3000){
-          was_long_pressed_ = true;
-        }
-
+        
         is_pressed_ = is_pressed_now;
       }
 
@@ -174,25 +178,28 @@ Movement mov;
 Sensors sens;
 Button button;
 int state = st_stop;
+int line_pos = ln_center;
+int action = act_forward;
 bool dioda = false;
 
 void drive_left() {
-  if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) {
+  if (!sens.center_white() && sens.cleft_white()) {
+    line_pos = ln_center;
+    action = act_forward;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
+    line_pos = ln_center;
+    action = act_turn_left;
     mov.left_forward(faster, stopped);
-  }
-  else if (!sens.center_white() && !sens.cright_white()){
-    mov.right_forward(faster, stopped);
   }
   else if (!sens.cleft_white()) {
+    line_pos = ln_left;
+    action = act_turn_left;
     mov.left_forward(faster, stopped);
   }
-  else if (!sens.cright_white()){
-    mov.right_forward(faster, stopped);
-  }
-  else {
+  else if (line_pos){
+    action = act_turn_right;
     mov.right_inplace(slow);
   }
 }
@@ -243,6 +250,7 @@ void loop() {
     else {
       digitalWrite(diode_pin, LOW);
     }
+    dioda = !dioda;
   }
   
 
