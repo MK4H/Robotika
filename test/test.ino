@@ -174,6 +174,7 @@ Movement mov;
 Sensors sens;
 Button button;
 int state = st_stop;
+bool dioda = false;
 
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) {
@@ -235,9 +236,15 @@ void loop() {
     }
   }
 
-  if(button.was_long_pressed()){
-    digitalWrite(diode_pin, HIGH);
+  if(button.was_long_pressed() ){
+    if(dioda){
+      digitalWrite(diode_pin, HIGH);
+      }
+    else {
+      digitalWrite(diode_pin, LOW);
+    }
   }
+  
 
   // cleanup
   button.reset_memory();
