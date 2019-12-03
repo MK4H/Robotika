@@ -161,14 +161,14 @@ Button button;
 int state = st_stop;
 
 void drive_left() {
-  if (!sens.center_white() && sens.cleft_white() & sens.cright_white()) {
+  if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) {
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    mov.left_forward(fast, slow);
+    mov.left_forward(medium, slow);
   }
   else if (!sens.center_white() && !sens.cright_white()){
-    mov.right_forward(fast, slow);
+    mov.right_forward(medium, slow);
   }
   else if (!sens.cleft_white()) {
     mov.left_inplace(slow);
