@@ -177,43 +177,83 @@ Sensors sens;
 Button button;
 int state = st_stop;
 bool dioda = false;
-float error = 0;
-float backerror = 0;
-int state2 = 0;
+float forward_error = 0;
+float back_error = 0;
+int turning_state = 0;
+int last_seen = 0;
+
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white()) {
-    state2 = 0;
+    turning_state = 0;
+    last_seen = 0;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    if (state2 != 1)
+    if (turning_state != 1)
     {
-      state2 = 1;
-      error = 60;
-      backerror = 0;
+      turning_state = 1;
+      forward_error = 40;
+      back_error = 20;
     }
-    mov.left_forward(error, backerror);
-    error += 10;
-    backerror -= 10;
+    mov.left_forward(forward_error, back_error);
+    forward_error += 10;
+    back_error -= 10;
   }
   else if (!sens.cleft_white()) {
-    if (state2 != 2)
+    if (turning_state != 2)
     {
-      state2 = 2;
-      error = 60;
-      backerror = 0;
+      turning_state = 2;
+      forward_error = 40;
+      back_error = 20;
     }
-    mov.left_forward(error, backerror);
-    error += 10;
-    backerror -= 10;
+    last_seen = 1;
+    mov.left_forward(forward_error, back_error);
+    forward_error += 10;
+    back_error -= 10;
   }
   else {
-    mov.right_inplace(slow);
+    if (last_seen == 0)
+      mov.right_inplace(slow);   
+    else
+      mov.left_inplace(slow);
   }
 }
 
 void drive_right() {
-  drive_left();
+  if (!sens.center_white() && sens.cright_white()) {
+    turning_state = 0;
+    last_seen = 0;
+    mov.forward(faster);
+  }
+  else if (!sens.center_white() && !sens.cright_white()){
+    if (turning_state != 1)
+    {
+      turning_state = 1;
+      forward_error = 40;
+      back_error = 20;
+    }
+    mov.right_forward(forward_error, back_error);
+    forward_error += 10;
+    back_error -= 10;
+  }
+  else if (!sens.cright_white()) {
+    if (turning_state != 2)
+    {
+      turning_state = 2;
+      forward_error = 40;
+      back_error = 20;
+    }
+    last_seen = 1;
+    mov.right_forward(forward_error, back_error);
+    forward_error += 10;
+    back_error -= 10;
+  }
+  else {   
+    if (last_seen == 0)
+      mov.left_inplace(slow);   
+    else
+      mov.right_inplace(slow);
+  }
 }
 
 void setup() {
