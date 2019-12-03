@@ -3,6 +3,7 @@
 const int left_pin = 12;
 const int right_pin = 13;
 const int button_pin = 2;
+const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
 enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 80, faster = 100};
@@ -14,16 +15,23 @@ public:
         is_pressed_ = false;
         was_pressed_ = false;
         was_unpressed_ = false;
+        was_long_pressed_ = false;
       }
 
       void notify_actual_state(bool is_pressed_now){
         if(!is_pressed_ && is_pressed_now)
         {
           was_pressed_ = true;
+          PressedTime = millis();
         }
         else if(is_pressed_ && !is_pressed_now)
         {
           was_unpressed_ = true;
+        }
+
+        unsigned long CurrentTime = millis();
+        if (CurrentTime - PressedTime > 3000){
+          was_long_pressed_ = true;
         }
 
         is_pressed_ = is_pressed_now;
@@ -37,15 +45,22 @@ public:
         return was_unpressed_;
       }
 
+      bool was_long_pressed(){
+        return was_long_pressed_;
+      }
+
       void reset_memory(){
         was_pressed_ = false;
         was_unpressed_ = false;
+        was_long_pressed_ = false;
       }
       
 private:
   bool is_pressed_;
   bool was_pressed_;
+  bool was_long_pressed_;
   bool was_unpressed_;
+  unsigned long PressedTime = millis();
   };
 
 class Sensors {
@@ -197,6 +212,7 @@ void setup() {
   // put your setup code here, to run once:
   mov.attach();
   pinMode(button_pin, INPUT_PULLUP);
+  pinMode(diode_pin, OUTPUT);
   pinMode(3, INPUT_PULLUP);
   pinMode(4, INPUT_PULLUP);
   pinMode(5, INPUT_PULLUP);
@@ -217,6 +233,10 @@ void loop() {
     else {
       state = st_stop;
     }
+  }
+
+  if(button.was_long_pressed()){
+    digitalWrite(diode_pin, HIGH);
   }
 
   // cleanup
