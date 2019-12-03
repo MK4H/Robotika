@@ -4,8 +4,8 @@ const int left_pin = 12;
 const int right_pin = 13;
 const int button_pin = 2;
 
-enum states{ stop = 0, forward, backward, rotate_left, rotate_right, num_states};
-enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 100, faster = 500};
+enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
+enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 80, faster = 100};
 
 class Button {
 public:
@@ -91,45 +91,45 @@ public:
     right_.attach(right_pin,500,2500);
   }
 
-  void forward(int percent) {
+  void forward(float percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 + max_ms * (percent/100.0f)));
-    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
+    left_.writeMicroseconds((int)(1500 + max_spd * (percent/100.0f)));
+    right_.writeMicroseconds((int)(1500 - max_spd * (percent/100.0f)));
   }
 
-  void backward(int percent) {
+  void backward(float percent) {
     forward(-percent);
   }
 
-  void left_forward(int forw_perc, int left_perc) {
+  void left_forward(float forw_perc, float left_perc) {
     left_speed(left_perc);
     right_speed(forw_perc);
   }
 
-  void right_forward(int forw_perc, int right_perc) {
+  void right_forward(float forw_perc, float right_perc) {
     left_speed(forw_perc);
     right_speed(right_perc);
   }
 
-  void left_speed(int percent) {
+  void left_speed(float percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 + max_ms * (percent/100.0f)));
+    left_.writeMicroseconds((int)(1500 + max_spd * (percent/100.0f)));
     
   }
 
-  void right_speed(int percent) {
+  void right_speed(float percent) {
     percent = cap_percent(percent);
-    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
+    right_.writeMicroseconds((int)(1500 - max_spd * (percent/100.0f)));
   }
 
-  void left_inplace(int percent) {
+  void left_inplace(float percent) {
     percent = cap_percent(percent);
-    left_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
-    right_.writeMicroseconds((int)(1500 - max_ms * (percent/100.0f)));
+    left_.writeMicroseconds((int)(1500 - max_spd * (percent/100.0f)));
+    right_.writeMicroseconds((int)(1500 - max_spd * (percent/100.0f)));
 
   }
 
-  void right_inplace(int percent) {
+  void right_inplace(float percent) {
     left_inplace(-percent);
   }
   
@@ -140,7 +140,7 @@ public:
 private:
   Servo left_, right_;
 
-  const int max_ms = 500;
+  const int max_spd = 500;
 
   int cap_percent(int percent) {
     if (percent > 100) {
@@ -158,43 +158,38 @@ private:
 Movement mov;
 Sensors sens;
 Button button;
-int state = stop;
-bool left_mark = true;
-
-const int forward_speed = 100;
-const int turning_speed = 0;
-const int ip_turning_speed = 50;
+int state = st_stop;
 
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white() & sens.cright_white()) {
-    mov.forward(forward_speed);
+    mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    mov.left_forward(forward_speed, turning_speed);
+    mov.left_forward(fast, slow);
   }
   else if (!sens.center_white() && !sens.cright_white()){
-    mov.right_forward(forward_speed, turning_speed);
+    mov.right_forward(fast, slow);
   }
   else if (!sens.cleft_white()) {
-    mov.left_inplace(ip_turning_speed);
+    mov.left_inplace(slow);
   }
   else if (!sens.cright_white()){
-    mov.right_inplace(ip_turning_speed);
+    mov.right_inplace(slow);
   }
   else {
-    mov.right_inplace(ip_turning_speed);
+    mov.right_inplace(slow);
   }
 }
 
 void drive_right() {
   if (!sens.center_white() && sens.cright_white()) {
-    mov.left_forward(forward_speed, forward_speed/2);
+    mov.left_forward(fast, slow);
   }
   else if (!sens.cright_white()) {
-    mov.right_inplace(turning_speed);
+    mov.right_inplace(slow);
   }
   else {
-    mov.right_inplace(turning_speed);
+    mov.right_inplace(slow);
   }
 }
 
@@ -216,11 +211,11 @@ void loop() {
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
   if (button.was_pressed()) {
-    if (state == stop) {
-      state = forward;
+    if (state == st_stop) {
+      state = st_drive_left;
     }
     else {
-      state = stop;
+      state = st_stop;
     }
   }
 
@@ -228,7 +223,7 @@ void loop() {
   button.reset_memory();
 
   // movement disabled
-  if (state == stop) {
+  if (state == st_stop) {
     mov.stop();
     return;
   }
@@ -237,21 +232,22 @@ void loop() {
 
 
   if (!sens.left_white()) {
-    left_mark = true;
+    state = st_drive_left;
   }
 
   if (!sens.right_white()) {
-    left_mark = false;
+    state = st_drive_right;
   }
  
-  drive_left();
-  return;
-  if (left_mark){
-    drive_left();
+  switch(state) {
+    case st_stop:
+      mov.stop();
+      break;
+    case st_drive_left:
+      drive_left();
+      break;
+    case st_drive_right:
+      drive_right();
+      break;
   }
-  else {
-    drive_right();
-  }
-
-
 }
