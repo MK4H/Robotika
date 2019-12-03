@@ -165,16 +165,16 @@ void drive_left() {
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    mov.left_forward(medium, slow);
+    mov.left_forward(faster, stopped);
   }
   else if (!sens.center_white() && !sens.cright_white()){
-    mov.right_forward(medium, slow);
+    mov.right_forward(faster, stopped);
   }
   else if (!sens.cleft_white()) {
-    mov.left_inplace(slow);
+    mov.left_forward(faster, stopped);
   }
   else if (!sens.cright_white()){
-    mov.right_inplace(slow);
+    mov.right_forward(faster, stopped);
   }
   else {
     mov.right_inplace(slow);
