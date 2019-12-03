@@ -6,9 +6,7 @@ const int button_pin = 2;
 const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
-enum line {ln_center, ln_left, ln_right};
-enum action {act_turning_left, act_turning_right, act_forward};
-enum speeds{ stopped = 0, slow = 20, medium = 50, fast = 80, faster = 100};
+enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 
 class Button {
 public:
@@ -181,39 +179,43 @@ int state = st_stop;
 int line_pos = ln_center;
 int action = act_forward;
 bool dioda = false;
-
+float error = 0;
+float backerror = 0;
+int state2 = 0;
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white()) {
-    line_pos = ln_center;
-    action = act_forward;
+    state2 = 0;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    line_pos = ln_center;
-    action = act_turn_left;
-    mov.left_forward(faster, stopped);
+    if (state2 != 1)
+    {
+      state2 = 1;
+      error = 60;
+      backerror = 0;
+    }
+    mov.left_forward(error, backerror);
+    error += 10;
+    backerror -= 10;
   }
   else if (!sens.cleft_white()) {
-    line_pos = ln_left;
-    action = act_turn_left;
-    mov.left_forward(faster, stopped);
+    if (state2 != 2)
+    {
+      state2 = 2;
+      error = 60;
+      backerror = 0;
+    }
+    mov.left_forward(error, backerror);
+    error += 10;
+    backerror -= 10;
   }
-  else if (line_pos){
-    action = act_turn_right;
+  else {
     mov.right_inplace(slow);
   }
 }
 
 void drive_right() {
-  if (!sens.center_white() && sens.cright_white()) {
-    mov.left_forward(fast, slow);
-  }
-  else if (!sens.cright_white()) {
-    mov.right_inplace(slow);
-  }
-  else {
-    mov.right_inplace(slow);
-  }
+  drive_left();
 }
 
 void setup() {
