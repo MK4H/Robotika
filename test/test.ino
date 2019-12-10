@@ -6,6 +6,8 @@ const int button_pin = 2;
 const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
+enum line {ln_center, ln_left, ln_right};
+enum action {act_turning_left, act_turning_right, act_forward};
 enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 
 class Button {
