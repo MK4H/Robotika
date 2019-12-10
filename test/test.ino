@@ -74,72 +74,30 @@ public:
     :state_(0) {}
 
   void update() {
-    prev_state_ = state_;
     state_ = PIND;
   }
 
   bool left_white() {
-    return left_state(state_);
-  }
-
-  bool cleft_white(){
-    return cleft_state(state_);
-  }
-
-  bool center_white() {
-    return center_state(state_); 
-  }
-
-  bool cright_white() {
-    return cright_state(state_); 
-  }
-
-  bool right_white() {
-    return right_state(state_);
-  }
-
-  bool left_changed() {
-    return left_state(state_) != left_state(prev_state_);
-  }
-
-  bool right_changed() {
-    return right_state(state_) != right_state(prev_state_);
-  }
-
-  bool cleft_changed() {
-    return cleft_state(state_) != cleft_state(prev_state_);
-  }
-
-  bool cright_changed() {
-    return cright_state(state_) != cright_state(prev_state_);
-  }
-
-  bool center_changed() {
-    return center_state(state_) != center_state(prev_state_);
-  }
-private:
-  int state_;
-  int prev_state_;
-
-  bool left_state(int state) {
     return state_ & (1 << 3); 
   }
 
-  bool cleft_state(int state){
+  bool cleft_white(){
     return state_ & (1 << 4); 
   }
 
-  bool center_state(int state) {
+  bool center_white() {
     return state_ & (1 << 5); 
   }
 
-  bool cright_state(int state) {
+  bool cright_white() {
     return state_ & (1 << 6); 
   }
 
-  bool right_state(int state) {
+  bool right_white() {
     return state_ & (1 << 7); 
   }
+private:
+  int state_;
 };
 
 class Movement {
@@ -225,7 +183,6 @@ float forward_error = 0;
 float back_error = 0;
 int turning_state = 0;
 int last_seen = 0;
-int splits = 0;
 
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white()) {
@@ -349,19 +306,10 @@ void loop() {
   }
 
   // main algorithm
-  //Left black spot with left sensor
-  if (sens.left_white() && sens.left_changed()) {
-    if (state = st_drive_right && splits == 0) {
-      splits++;
-    }
 
-    if (splits == 2) {
-      
-    }
-  }
 
   if (!sens.left_white()) {
-    
+    state = st_drive_left;
   }
 
   if (!sens.right_white()) {
