@@ -270,6 +270,9 @@ void setup() {
   pinMode(7, INPUT_PULLUP);
 }
 
+int ignored_changes = -1;
+bool previous_black = false;
+
 void loop() {
   // update info from ir sensors
   sens.update();
@@ -277,6 +280,8 @@ void loop() {
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
   if (button.was_pressed()) {
+    ignored_changes = -1;
+    previous_black = false;
     if (state == st_stop) {
       state = st_drive_left;
     }
@@ -308,12 +313,48 @@ void loop() {
   // main algorithm
 
 
+  // At the start than stop
+  if (!sens.left_white() && !sens.right_white())
+  {
+    state = st_stop;
+    return;
+  }
+
+  int black_sensor = -1;
   if (!sens.left_white()) {
-    state = st_drive_left;
+    if(ignored_changes == -1)
+    {
+      state = st_drive_left;
+      ignored_changes = 0;
+    }
+    black_sensor = st_drive_left;
   }
 
   if (!sens.right_white()) {
-    state = st_drive_right;
+    if (ignored_changes == -1)
+    {
+      state = st_drive_right;
+      ignored_changes = 0;
+    }
+    black_sensor = st_drive_right;
+  }
+  
+  if (black_sensor != -1 && state != black_sensor)
+  {
+    previous_black = true; 
+  }
+  else
+  {
+    if (previous_black)
+    {
+      ++ignored_changes;
+      previous_black = false;
+    }
+  }
+
+  if (ignored_changes >= 2)
+  {
+    ignored_changes = -1;
   }
  
   switch(state) {
