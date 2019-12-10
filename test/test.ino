@@ -178,6 +178,8 @@ Movement mov;
 Sensors sens;
 Button button;
 int state = st_stop;
+int line_pos = ln_center;
+int action = act_forward;
 bool dioda = false;
 float forward_error = 0;
 float back_error = 0;
@@ -324,7 +326,11 @@ void loop() {
   if (!sens.left_white()) {
     if(ignored_changes == -1)
     {
-      state = st_drive_left;
+      if(dioda)
+        state = st_drive_right;
+       else
+        state = st_drive_left;
+        
       ignored_changes = 0;
     }
     black_sensor = st_drive_left;
@@ -333,11 +339,17 @@ void loop() {
   if (!sens.right_white()) {
     if (ignored_changes == -1)
     {
-      state = st_drive_right;
+      if(dioda)    
+        state = st_drive_right;
+       else
+        state = st_drive_left;
+        
       ignored_changes = 0;
     }
     black_sensor = st_drive_right;
   }
+
+  
   
   if (black_sensor != -1 && state != black_sensor)
   {
