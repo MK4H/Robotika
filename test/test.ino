@@ -6,9 +6,8 @@ const int button_pin = 2;
 const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
-enum line {ln_center, ln_left, ln_right};
-enum action {act_turning_left, act_turning_right, act_forward};
 enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
+enum turning{ turning_none = 0, turning_left, turning_right};
 
 class Button {
 public:
@@ -178,24 +177,24 @@ Movement mov;
 Sensors sens;
 Button button;
 int state = st_stop;
-int line_pos = ln_center;
-int action = act_forward;
 bool dioda = false;
 float forward_error = 0;
 float back_error = 0;
-int turning_state = 0;
-int last_seen = 0;
+int turning_state = turning_none;
+bool last_seen_middle = true;
+int ignored_changes = -1;
+bool previous_black = false;
 
 void drive_left() {
   if (!sens.center_white() && sens.cleft_white()) {
-    turning_state = 0;
-    last_seen = 0;
+    turning_state = turning_none;
+    last_seen_middle = true;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cleft_white()){
-    if (turning_state != 1)
+    if (turning_state != turning_left)
     {
-      turning_state = 1;
+      turning_state = turning_left;
       forward_error = 40;
       back_error = 20;
     }
@@ -204,19 +203,19 @@ void drive_left() {
     back_error -= 10;
   }
   else if (!sens.cleft_white()) {
-    if (turning_state != 2)
+    if (turning_state != turning_right)
     {
-      turning_state = 2;
+      turning_state = turning_right;
       forward_error = 40;
       back_error = 20;
     }
-    last_seen = 1;
+    last_seen_middle = false;
     mov.left_forward(forward_error, back_error);
     forward_error += 10;
     back_error -= 10;
   }
   else {
-    if (last_seen == 0)
+    if (last_seen_middle == true)
       mov.right_inplace(slow);   
     else
       mov.left_inplace(slow);
@@ -225,14 +224,14 @@ void drive_left() {
 
 void drive_right() {
   if (!sens.center_white() && sens.cright_white()) {
-    turning_state = 0;
-    last_seen = 0;
+    turning_state = turning_none;
+    last_seen_middle = true;
     mov.forward(faster);
   }
   else if (!sens.center_white() && !sens.cright_white()){
-    if (turning_state != 1)
+    if (turning_state != turning_left)
     {
-      turning_state = 1;
+      turning_state = turning_left;
       forward_error = 40;
       back_error = 20;
     }
@@ -241,19 +240,19 @@ void drive_right() {
     back_error -= 10;
   }
   else if (!sens.cright_white()) {
-    if (turning_state != 2)
+    if (turning_state != turning_right)
     {
-      turning_state = 2;
+      turning_state = turning_right;
       forward_error = 40;
       back_error = 20;
     }
-    last_seen = 1;
+    last_seen_middle = false;
     mov.right_forward(forward_error, back_error);
     forward_error += 10;
     back_error -= 10;
   }
   else {   
-    if (last_seen == 0)
+    if (last_seen_middle == true)
       mov.left_inplace(slow);   
     else
       mov.right_inplace(slow);
@@ -271,9 +270,6 @@ void setup() {
   pinMode(6, INPUT_PULLUP);
   pinMode(7, INPUT_PULLUP);
 }
-
-int ignored_changes = -1;
-bool previous_black = false;
 
 void loop() {
   // update info from ir sensors
@@ -306,6 +302,12 @@ void loop() {
   // cleanup
   button.reset_memory();
 
+  // At the start finish the movement
+  if (!sens.left_white() && !sens.right_white())
+  {
+    state = st_stop;
+  }
+  
   // movement disabled
   if (state == st_stop) {
     mov.stop();
@@ -314,18 +316,13 @@ void loop() {
 
   // main algorithm
 
-
-  // At the start than stop
-  if (!sens.left_white() && !sens.right_white())
-  {
-    state = st_stop;
-    return;
-  }
-
   int black_sensor = -1;
+
+  // Check for left mark to specify the path
   if (!sens.left_white()) {
     if(ignored_changes == -1)
     {
+      // If dioda is shining, choose other way
       if(dioda)
         state = st_drive_right;
        else
@@ -336,9 +333,11 @@ void loop() {
     black_sensor = st_drive_left;
   }
 
+  // Check for right mark to specify the path
   if (!sens.right_white()) {
     if (ignored_changes == -1)
     {
+      // If dioda is shining, choose other way
       if(dioda)    
         state = st_drive_right;
        else
@@ -353,17 +352,21 @@ void loop() {
   
   if (black_sensor != -1 && state != black_sensor)
   {
+    // Black sensor is on ignored side
     previous_black = true; 
   }
   else
   {
+    // Check if ignored sensor was blck before
     if (previous_black)
     {
+      // Calculate how many times the sensor changed from black to white
       ++ignored_changes;
       previous_black = false;
     }
   }
 
+  // Ignore other way at the split and merge
   if (ignored_changes >= 2)
   {
     ignored_changes = -1;
