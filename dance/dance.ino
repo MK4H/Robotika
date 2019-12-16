@@ -7,7 +7,6 @@ const int diode_pin = 11;
 
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
 enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
-enum turning{ turning_none = 0, turning_left, turning_right};
 
 enum sensor {f_left = 0, c_left = 1, center = 2, c_right = 3, f_right = 4};
 
@@ -188,18 +187,10 @@ Sensors sens;
 Button button;
 int state = st_stop;
 bool dioda = false;
-float forward_error = 0;
-float back_error = 0;
-int turning_state = turning_none;
-bool last_seen_middle = true;
-int ignored_changes = -1;
-bool previous_black = false;
 
 void drive_forward() {
   if (!sens.is_white(center) && sens.is_white(c_left) && sens.is_white(c_right)) 
   {
-    turning_state = turning_none;
-    last_seen_middle = true;
     mov.forward(faster);
   }
   else if(!sens.is_white(c_left))
@@ -245,8 +236,6 @@ void loop() {
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
   if (button.was_pressed()) {
-    ignored_changes = -1;
-    previous_black = false;
     if (state == st_stop) {
       state = st_drive_left;
     }
@@ -268,12 +257,6 @@ void loop() {
 
   // cleanup
   button.reset_memory();
-
-  // At the start finish the movement
-  if (!sens.left_white() && !sens.right_white())
-  {
-    state = st_stop;
-  }
   
   // movement disabled
   if (state == st_stop) {
@@ -282,72 +265,10 @@ void loop() {
   }
 
   // main algorithm
-
-  int black_sensor = -1;
-
-  // Check for left mark to specify the path
-  if (!sens.left_white()) {
-    if(ignored_changes == -1)
-    {
-      // If dioda is shining, choose other way
-      if(dioda)
-        state = st_drive_right;
-       else
-        state = st_drive_left;
-        
-      ignored_changes = 0;
-    }
-    black_sensor = st_drive_left;
-  }
-
-  // Check for right mark to specify the path
-  if (!sens.right_white()) {
-    if (ignored_changes == -1)
-    {
-      // If dioda is shining, choose other way
-      if(dioda)    
-        state = st_drive_right;
-       else
-        state = st_drive_left;
-        
-      ignored_changes = 0;
-    }
-    black_sensor = st_drive_right;
-  }
-
-  
-  
-  if (black_sensor != -1 && state != black_sensor)
-  {
-    // Black sensor is on ignored side
-    previous_black = true; 
-  }
-  else
-  {
-    // Check if ignored sensor was blck before
-    if (previous_black)
-    {
-      // Calculate how many times the sensor changed from black to white
-      ++ignored_changes;
-      previous_black = false;
-    }
-  }
-
-  // Ignore other way at the split and merge
-  if (ignored_changes >= 2)
-  {
-    ignored_changes = -1;
-  }
  
   switch(state) {
     case st_stop:
       mov.stop();
-      break;
-    case st_drive_left:
-      drive_left();
-      break;
-    case st_drive_right:
-      drive_right();
       break;
   }
 }
