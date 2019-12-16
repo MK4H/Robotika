@@ -10,7 +10,8 @@ enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 enum headings { north = 0, west, south, east, num_headings};
 
 enum sensor {f_left = 0, c_left = 1, center = 2, c_right = 3, f_right = 4};
-
+enum orientation {north = 0, east = 1, south = 2, west = 3};
+enum result {r_ok, r_err, r_eof};
 
 class Button {
 public:
@@ -179,6 +180,230 @@ private:
       return -100;
     }
     return percent;
+  }
+};
+
+class Point {
+public:
+  unsigned x,y;
+
+  Point()
+    :Point(0,0)
+  {
+    
+  }
+
+  Point(unsigned x, unsigned y)
+    :x(x), y(y)
+  {
+    
+  }
+  
+  unsigned x_dist_to(Point p) {
+    return p.x - x;  
+  }
+
+  unsigned y_dist_to(Point p) {
+    return p.y - y;
+  }
+};
+
+class Waypoint_Node {
+public:
+  Point p;
+  unsigned tim;
+  Waypoint_Node * next;
+  
+  Waypoint_Node(Point p, unsigned tim, Waypoint_Node * next) 
+    :p(p), tim(tim), next(next)
+  {
+    
+  }
+};
+
+class Itinerary {
+public:
+  static result parse_input(char * input, Itinerary &it) {
+    char * input_left = input;
+    
+    if (get_starting_pos(&input_left, it.c_pos_, it.c_orient_) != r_ok) {
+      return r_err;
+    }
+    result res;
+    Point new_point;
+    unsigned new_tim;
+    Waypoint_Node ** next_link = &it.point_list_;
+    while ((res = get_next_target(&input_left, new_point, new_tim)) == r_ok) {
+      *next_link = new Waypoint_Node(new_point, new_tim, nullptr);
+      next_link = &((*next_link)->next);
+    }
+
+    if (res == r_ok || res == r_eof) {
+      it.target_ = it.point_list_->next;
+      return r_ok;
+    }
+    else {
+      it.delete_list();
+      return r_err;
+    }
+  }
+
+  Itinerary() 
+    :point_list_(nullptr), c_pos_(0,0), c_orient_(north), target_(nullptr)
+  {
+    
+  }
+  
+  ~Itinerary() {
+    delete_list();
+  }
+  
+private:
+
+  Waypoint_Node * point_list_;
+
+  Point c_pos_;
+  orientation c_orient_;
+
+  Waypoint_Node * target_;
+
+  
+
+  static char get_and_move(char ** text) {
+    return *((*text)++);
+  }
+  
+  static void skip_whitespace(char ** text) {
+    while (isWhitespace(**text)) {
+      ++(*text);
+    }
+  }
+
+  static result get_number(char ** text, unsigned &number) {
+    unsigned num = 0;
+
+    if (!isDigit(**text)) {
+      return r_err;
+    }
+    while (isDigit(get_and_move(text))) {
+      num = 10 * num + (**text - '0');
+    }
+    number = num;
+    return r_ok;
+  }
+
+  static result get_orientation(char ** text, orientation &orient) {
+    switch (get_and_move(text)) {
+      case 'n':
+      case 'N':
+        orient = north;
+        return r_ok;
+      case 'e':
+      case 'E':
+        orient = east;
+        return r_ok;
+      case 's':
+      case 'S':
+        orient = south;
+        return r_ok;
+      case 'w':
+      case 'W':
+        orient = west;
+        return r_ok;
+      default:
+        return r_err;
+    }
+  }
+
+  static result get_char_pos(char ** text, unsigned &pos) {
+    char char_pos = get_and_move(text);
+    if (!isAlpha(char_pos)) {
+      return r_err;
+    }
+
+    if (isLowerCase(char_pos)) {
+      pos = char_pos - 'a';
+      return r_ok;
+    }
+
+    if (isUpperCase(char_pos)) {
+      pos = char_pos - 'A';
+      return r_ok;
+    }
+    return r_err;
+  }
+
+  static result get_number_pos(char ** text, unsigned &pos) {
+    if (get_number(text, pos) != r_ok) {
+      return r_err;
+    }
+    if (pos < 1 || 9 < pos) {
+      return r_err;
+    }
+    //Offset to 0 based indexing
+    pos -= 1;
+    return r_ok;
+  }
+
+  static result get_time(char ** text, unsigned &number) {
+    if (**text != 't' && **text != 'T') {
+      number = 0;
+      return r_err;
+    }
+    //Skip T
+    (*text)++;
+    return get_number(text, number);
+  }
+  
+  static result get_starting_pos(char ** text, Point &starting_pos, orientation &orient) {
+    skip_whitespace(text);
+    if (get_char_pos(text, starting_pos.x) != r_ok) {
+      return r_err;
+    }
+
+    if (get_number_pos(text, starting_pos.y) != r_ok) {
+      return r_err;
+    }
+
+    if (get_orientation(text, orient) != r_ok) {
+      return r_err;
+    }
+    return r_ok;
+  }
+
+  static result get_next_target(char ** text, Point &next_target, unsigned &tar_time) {
+    skip_whitespace(text);
+    if (**text == '\0') {
+      return r_eof;
+    }
+    
+    if (get_char_pos(text, next_target.x) != r_ok) {
+      return r_err;
+    }
+
+    if (get_number_pos(text, next_target.y) != r_ok) {
+      return r_err;
+    }
+
+    if (!isWhitespace(**text)) {
+      return r_err;
+    }
+    
+    skip_whitespace(text);
+    
+    if (get_time(text, tar_time) != r_ok) {
+      return r_err;
+    }
+    return r_ok;
+  }
+
+  void delete_list() {
+    Waypoint_Node * current = point_list_;
+    while (current) {
+       Waypoint_Node * to_delete = current;
+       current = current->next;
+       delete(to_delete);
+    }
   }
 };
 
