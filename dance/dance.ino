@@ -9,6 +9,9 @@ enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
 enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 enum turning{ turning_none = 0, turning_left, turning_right};
 
+enum sensor {f_left = 0, c_left = 1, center = 2, c_right = 3, f_right = 4};
+
+
 class Button {
 public:
 
@@ -70,33 +73,27 @@ class Sensors {
 public:
   
   Sensors()
-    :state_(0) {}
+    :curr_state_(0), prev_state_(0) {}
 
   void update() {
-    state_ = PIND;
+    prev_state_ = curr_state_;
+    curr_state_ = PIND;
   }
 
-  bool left_white() {
-    return state_ & (1 << 3); 
+  bool is_white(sensor sensor) {
+    return get_state(curr_state_, sensor);
   }
 
-  bool cleft_white(){
-    return state_ & (1 << 4); 
-  }
-
-  bool center_white() {
-    return state_ & (1 << 5); 
-  }
-
-  bool cright_white() {
-    return state_ & (1 << 6); 
-  }
-
-  bool right_white() {
-    return state_ & (1 << 7); 
+  bool has_changed(sensor sensor) {
+    return get_state(curr_state_, sensor) == get_state(prev_state_, sensor);
   }
 private:
-  int state_;
+  int curr_state_;
+  int prev_state_;
+
+  bool get_state(int state, sensor sensor) {
+    return state & (1 << (3 + sensor)); 
+  }
 };
 
 class Movement {
