@@ -10,7 +10,6 @@ enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 enum headings { north = 0, west, south, east, num_headings};
 
 enum sensor {f_left = 0, c_left = 1, center = 2, c_right = 3, f_right = 4};
-enum orientation {north = 0, east = 1, south = 2, west = 3};
 enum result {r_ok, r_err, r_eof};
 
 class Button {
@@ -226,7 +225,7 @@ public:
   static result parse_input(char * input, Itinerary &it) {
     char * input_left = input;
     
-    if (get_starting_pos(&input_left, it.c_pos_, it.c_orient_) != r_ok) {
+    if (get_starting_pos(&input_left, it.c_pos_, it.c_head_) != r_ok) {
       return r_err;
     }
     result res;
@@ -249,7 +248,7 @@ public:
   }
 
   Itinerary() 
-    :point_list_(nullptr), c_pos_(0,0), c_orient_(north), target_(nullptr)
+    :point_list_(nullptr), c_pos_(0,0), c_head_(north), target_(nullptr)
   {
     
   }
@@ -263,7 +262,7 @@ private:
   Waypoint_Node * point_list_;
 
   Point c_pos_;
-  orientation c_orient_;
+  headings c_head_;
 
   Waypoint_Node * target_;
 
@@ -292,23 +291,23 @@ private:
     return r_ok;
   }
 
-  static result get_orientation(char ** text, orientation &orient) {
+  static result get_heading(char ** text, headings &head) {
     switch (get_and_move(text)) {
       case 'n':
       case 'N':
-        orient = north;
+        head = north;
         return r_ok;
       case 'e':
       case 'E':
-        orient = east;
+        head = east;
         return r_ok;
       case 's':
       case 'S':
-        orient = south;
+        head = south;
         return r_ok;
       case 'w':
       case 'W':
-        orient = west;
+        head = west;
         return r_ok;
       default:
         return r_err;
@@ -355,7 +354,7 @@ private:
     return get_number(text, number);
   }
   
-  static result get_starting_pos(char ** text, Point &starting_pos, orientation &orient) {
+  static result get_starting_pos(char ** text, Point &starting_pos, headings &head) {
     skip_whitespace(text);
     if (get_char_pos(text, starting_pos.x) != r_ok) {
       return r_err;
@@ -365,7 +364,7 @@ private:
       return r_err;
     }
 
-    if (get_orientation(text, orient) != r_ok) {
+    if (get_heading(text, head) != r_ok) {
       return r_err;
     }
     return r_ok;
