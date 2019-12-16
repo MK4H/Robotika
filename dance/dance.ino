@@ -91,6 +91,15 @@ public:
   bool has_changed(sensor sensor) {
     return get_state(curr_state_, sensor) == get_state(prev_state_, sensor);
   }
+
+  bool changed_to_white(sensor sensor) {
+    return is_white(sensor) && has_changed(sensor);
+  }
+
+  bool changed_to_black(sensor sensor) {
+    return is_black(sensor) && has_changed(sensor);
+  }
+  
 private:
   int curr_state_;
   int prev_state_;
@@ -187,13 +196,13 @@ int ignored_changes = -1;
 bool previous_black = false;
 
 void drive_forward() {
-  if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) 
+  if (!sens.is_white(center) && sens.is_white(c_left) && sens.is_white(c_right)) 
   {
     turning_state = turning_none;
     last_seen_middle = true;
     mov.forward(faster);
   }
-  else if(!sens.cleft_white())
+  else if(!sens.is_white(c_left))
   {
     mov.left_forward(faster, faster + 10);
   }
@@ -203,12 +212,18 @@ void drive_forward() {
   }
 }
 
-bool turn_left(int crossed_lines) {
-  
+bool turn_left(int & crossed_lines) {
+  mov.left_inplace(faster);
+  if (sens.changed_to_black(center))
+    --crossed_lines;
+  return crossed_lines <= 0;
 }
 
-bool turn_right(int crossed_lines) {
-  
+bool turn_right(int & crossed_lines) {
+  mov.right_inplace(faster);
+  if (sens.changed_to_black(center))
+    --crossed_lines;
+  return crossed_lines <= 0;
 }
 
 void setup() {
