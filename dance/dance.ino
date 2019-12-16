@@ -186,78 +186,29 @@ bool last_seen_middle = true;
 int ignored_changes = -1;
 bool previous_black = false;
 
-void drive_left() {
-  if (!sens.center_white() && sens.cleft_white()) {
+void drive_forward() {
+  if (!sens.center_white() && sens.cleft_white() && sens.cright_white()) 
+  {
     turning_state = turning_none;
     last_seen_middle = true;
     mov.forward(faster);
   }
-  else if (!sens.center_white() && !sens.cleft_white()){
-    if (turning_state != turning_left)
-    {
-      turning_state = turning_left;
-      forward_error = 40;
-      back_error = 20;
-    }
-    mov.left_forward(forward_error, back_error);
-    forward_error += 10;
-    back_error -= 10;
+  else if(!sens.cleft_white())
+  {
+    mov.left_forward(faster, faster + 10);
   }
-  else if (!sens.cleft_white()) {
-    if (turning_state != turning_right)
-    {
-      turning_state = turning_right;
-      forward_error = 40;
-      back_error = 20;
-    }
-    last_seen_middle = false;
-    mov.left_forward(forward_error, back_error);
-    forward_error += 10;
-    back_error -= 10;
-  }
-  else {
-    if (last_seen_middle == true)
-      mov.right_inplace(slow);   
-    else
-      mov.left_inplace(slow);
+  else
+  {
+    mov.right_forward(faster, faster + 10);
   }
 }
 
-void drive_right() {
-  if (!sens.center_white() && sens.cright_white()) {
-    turning_state = turning_none;
-    last_seen_middle = true;
-    mov.forward(faster);
-  }
-  else if (!sens.center_white() && !sens.cright_white()){
-    if (turning_state != turning_left)
-    {
-      turning_state = turning_left;
-      forward_error = 40;
-      back_error = 20;
-    }
-    mov.right_forward(forward_error, back_error);
-    forward_error += 10;
-    back_error -= 10;
-  }
-  else if (!sens.cright_white()) {
-    if (turning_state != turning_right)
-    {
-      turning_state = turning_right;
-      forward_error = 40;
-      back_error = 20;
-    }
-    last_seen_middle = false;
-    mov.right_forward(forward_error, back_error);
-    forward_error += 10;
-    back_error -= 10;
-  }
-  else {   
-    if (last_seen_middle == true)
-      mov.left_inplace(slow);   
-    else
-      mov.right_inplace(slow);
-  }
+bool turn_left(int crossed_lines) {
+  
+}
+
+bool turn_right(int crossed_lines) {
+  
 }
 
 void setup() {
