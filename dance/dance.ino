@@ -11,15 +11,15 @@ const int diode_pin = 11;
 enum states{ st_stop = 0, st_drive_left, st_drive_right, st_num_states};
 enum speeds{ stopped = 0, slow = 30, medium = 50, faster = 80, fast = 100};
 
-Movement mov;
-Sensors sens;
-Button button;
-int state = st_stop;
-bool dioda = false;
+
 
 class Move_manager
 {
 public: 
+  Move_manager(Movement *mov, Sensors *sens):mov(mov),sens(sens) {
+
+  }
+
   bool move_forward(int segments)
   {
     // Initialization
@@ -27,7 +27,7 @@ public:
       forward_segments = segments;
       
     drive_forward();
-    if((sens.changed_to_black(f_left) && sens.is_white(f_right)) || (sens.changed_to_black(f_right) && sens.is_white(f_left)))
+    if((sens->changed_to_black(f_left) && sens->is_white(f_right)) || (sens->changed_to_black(f_right) && sens->is_white(f_left)))
     {
       --forward_segments;
       for (int i = 0; i < num_headings; ++i)
@@ -36,10 +36,10 @@ public:
 
     if(forward_segments == 0)
     {
-      if(sens.is_black(f_left))
+      if(sens->is_black(f_left))
         actual_crossroad[(actual_heading + 1) % num_headings] = true;
       
-      if(sens.is_black(f_right))
+      if(sens->is_black(f_right))
         actual_crossroad[(actual_heading - 1) % num_headings] = true;
 
       drive_forward();
@@ -47,7 +47,7 @@ public:
       // if middle on the crossroad
       {
         forward_segments = -1;
-        actual_crossroad[actual_heading] = sens.is_black(c_left) || sens.is_black(center) || sens.is_black(c_right);
+        actual_crossroad[actual_heading] = sens->is_black(c_left) || sens->is_black(center) || sens->is_black(c_right);
         actual_crossroad[(actual_heading + 2) % num_headings] = true;
       }
     }
@@ -93,7 +93,7 @@ public:
   
   void reset() 
   {
-    mov.stop();
+    mov->stop();
     forward_segments = -1;
     rotate_cross_lines = 0;
   }
@@ -104,31 +104,40 @@ private:
   int forward_segments = -1;
   int rotate_cross_lines = 0;
   int actual_heading;
+
+  Movement *mov;
+  Sensors *sens;
   
   void drive_forward() {
-    if(sens.is_black(c_left) && sens.is_white(f_left))
-      mov.left_forward(faster, faster + 10);
-    else if(sens.is_black(c_right) && sens.is_white(f_right))
-      mov.right_forward(faster, faster + 10);
+    if(sens->is_black(c_left) && sens->is_white(f_left))
+      mov->left_forward(faster, faster + 10);
+    else if(sens->is_black(c_right) && sens->is_white(f_right))
+      mov->right_forward(faster, faster + 10);
     else 
-      mov.forward(faster);
+      mov->forward(faster);
     
   }
   
   bool turn_left() {
-    mov.left_inplace(faster);
-    if (sens.changed_to_black(center))
+    mov->left_inplace(faster);
+    if (sens->changed_to_black(center))
       --rotate_cross_lines;
     return rotate_cross_lines <= 0;
   }
   
   bool turn_right() {
-    mov.right_inplace(faster);
-    if (sens.changed_to_black(center))
+    mov->right_inplace(faster);
+    if (sens->changed_to_black(center))
       --rotate_cross_lines;
     return rotate_cross_lines <= 0;
   }
 };
+
+Movement mov;
+Sensors sens;
+Button button;
+int state = st_stop;
+bool dioda = false;
 
 void setup() {
   // put your setup code here, to run once:
