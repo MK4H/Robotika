@@ -19,6 +19,7 @@ bool dioda = false;
 
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(9600);
   mov = new Movement();
   sens = new Sensors();
   move_manager = new MoveManager(mov, sens);
@@ -32,6 +33,7 @@ void setup() {
   pinMode(7, INPUT_PULLUP);
 }
 
+int stage = 0;
 void loop() {
   // update info from ir sensors
   sens->update();
@@ -39,6 +41,7 @@ void loop() {
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
   if (button.was_pressed()) {
+    stage = 0;
     if (state == st_stop) {
       state = st_drive_left;
     }
@@ -46,8 +49,34 @@ void loop() {
       state = st_stop;
     }
   }
+  button.reset_memory();
 
-  if(button.was_long_pressed() ){
+
+  // Movement manager usage example - go 2 segment forward, than rotate by one quarter to the left and go another two segments forward
+  if (state == st_stop) {
+    mov->stop();
+    return;
+  }
+
+  if(stage == 0)
+  {
+    if(move_manager->move_forward(2))
+      stage = 1;
+  }
+  else if(stage == 1)
+  {
+    if(move_manager->rotate_left(1))
+      stage = 2;
+  }
+  else if(stage == 2)
+  {
+    if(move_manager->move_forward(2))
+      stage = 3;
+  }
+  else
+    mov->stop();
+
+  /*if(button.was_long_pressed() ){
     if(dioda){
       digitalWrite(diode_pin, HIGH);
       }
@@ -59,7 +88,6 @@ void loop() {
   
 
   // cleanup
-  button.reset_memory();
   
   // movement disabled
   if (state == st_stop) {
@@ -73,5 +101,5 @@ void loop() {
     case st_stop:
       mov->stop();
       break;
-  }
+  }*/
 }

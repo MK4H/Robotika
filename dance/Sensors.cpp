@@ -24,7 +24,7 @@ public:
   }
 
   bool has_changed(sensor sensor) {
-    return get_state(curr_state_, sensor) == get_state(prev_state_, sensor);
+    return get_state(curr_state_, sensor) != get_state(prev_state_, sensor);
   }
 
   bool changed_to_white(sensor sensor) {
