@@ -2,6 +2,7 @@
 #define Button_c
 
 #include <Arduino.h>
+#include "Enums.cpp"
 
 class Button {
 public:

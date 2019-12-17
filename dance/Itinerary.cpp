@@ -3,9 +3,7 @@
 
 #include <Arduino.h>
 #include "Sensors.cpp"
-
-enum result {r_ok, r_err, r_eof};
-enum headings { north = 0, west, south, east, num_headings};
+#include "Enums.cpp"
 
 class Point {
 public:
