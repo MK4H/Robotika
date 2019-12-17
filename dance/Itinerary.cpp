@@ -2,8 +2,8 @@
 #define Itinerary_c
 
 #include <Arduino.h>
-#include "Sensors.cpp"
 #include "Enums.cpp"
+#include "Reader.cpp"
 
 class Point {
 public:
@@ -47,28 +47,26 @@ public:
 
 class Itinerary {
 public:
-  static result parse_input(char * input, Itinerary &it) {
-    char * input_left = input;
-    
-    if (get_starting_pos(&input_left, it.start_pos_, it.start_head_) != r_ok) {
+  result parse_input(Reader &in) {
+    if (get_starting_pos(in, start_pos_, start_head_) != r_ok) {
       return r_err;
     }
     result res;
     Point new_point;
     bool new_col_first;
     unsigned new_tim;
-    Waypoint_Node ** next_link = &it.point_list_;
-    while ((res = get_next_target(&input_left, new_point, new_col_first, new_tim)) == r_ok) {
+    Waypoint_Node ** next_link = &point_list_;
+    while ((res = get_next_target(in, new_point, new_col_first, new_tim)) == r_ok) {
       *next_link = new Waypoint_Node(new_point, new_col_first, new_tim, nullptr);
       next_link = &((*next_link)->next);
     }
 
     if (res == r_ok || res == r_eof) {
-      it.target_ = it.point_list_;
+      target_ = point_list_;
       return r_ok;
     }
     else {
-      it.delete_list();
+      delete_list();
       return r_err;
     }
   }
@@ -79,6 +77,8 @@ public:
     
   }
   
+  
+
   ~Itinerary() {
     delete_list();
   }
@@ -96,7 +96,9 @@ public:
   }
 
   bool advance_waypoint() {
-    target_ = target_->next;
+    if (target_) {
+      target_ = target_->next;
+    }
     return target_ == nullptr;
   }
 
@@ -112,33 +114,42 @@ private:
 
   Waypoint_Node * target_;
 
-  
+  Itinerary(const Itinerary &other) = delete;
+  Itinerary & operator =(const Itinerary &other) = delete;
 
-  static char get_and_move(char ** text) {
-    return *((*text)++);
-  }
-  
-  static void skip_whitespace(char ** text) {
-    while (isWhitespace(**text)) {
-      ++(*text);
+  static result skip_whitespace(Reader &in) {
+    if (in.get_current() == '\0') {
+      return r_eof;
     }
-  }
 
-  static result get_number(char ** text, unsigned &number) {
-    unsigned num = 0;
-
-    if (!isDigit(**text)) {
-      return r_err;
+    while (isWhitespace(in.get_current())) {
+      if (!in.move_next()) {
+        return r_eof;
+      }
     }
-    while (isDigit(get_and_move(text))) {
-      num = 10 * num + (**text - '0');
-    }
-    number = num;
     return r_ok;
   }
 
-  static result get_heading(char ** text, headings &head) {
-    switch (get_and_move(text)) {
+  static result get_number(Reader &in, unsigned &number) {
+    number = 0;
+
+    if (!isDigit(in.get_current())) {
+      return r_err;
+    }
+
+    while (isDigit(in.get_current())) {
+      number = 10 * number + (in.get_current() - '0');
+      if (!in.move_next()) {
+        break;
+      }
+    }
+    return r_ok;
+  }
+
+  static result get_heading(Reader &in, headings &head) {
+    char c = in.get_current();
+    in.move_next();
+    switch (c) {
       case 'n':
       case 'N':
         head = north;
@@ -160,8 +171,10 @@ private:
     }
   }
 
-  static result get_char_pos(char ** text, byte &pos) {
-    char char_pos = get_and_move(text);
+  static result get_char_pos(Reader &in, byte &pos) {
+    char char_pos = in.get_current();
+    in.move_next();
+
     if (!isAlpha(char_pos)) {
       return r_err;
     }
@@ -178,9 +191,9 @@ private:
     return r_err;
   }
 
-  static result get_number_pos(char ** text, byte &pos) {
+  static result get_number_pos(Reader &in, byte &pos) {
     unsigned new_num;
-    if (get_number(text, new_num) != r_ok) {
+    if (get_number(in, new_num) != r_ok) {
       return r_err;
     }
     if (new_num < 1 || 9 < new_num) {
@@ -192,83 +205,93 @@ private:
     return r_ok;
   }
 
-  static result get_time(char ** text, unsigned &number) {
-    if (**text != 't' && **text != 'T') {
+  static result get_time(Reader &in, unsigned &number) {
+    if (in.get_current() != 't' && in.get_current() != 'T') {
       number = 0;
       return r_err;
     }
     //Skip T
-    (*text)++;
-    return get_number(text, number);
+    if (!in.move_next()) {
+      return r_err;
+    }
+    return get_number(in, number);
   }
   
-  static result get_starting_pos(char ** text, Point &starting_pos, headings &head) {
-    skip_whitespace(text);
-    if (get_char_pos(text, starting_pos.col) != r_ok) {
+  static result get_starting_pos(Reader &in, Point &starting_pos, headings &head) {
+    if (skip_whitespace(in) != r_ok) {
+      return r_err;
+    }
+    if (get_char_pos(in, starting_pos.col) != r_ok) {
       return r_err;
     }
 
-    skip_whitespace(text);
-    if (get_number_pos(text, starting_pos.row) != r_ok) {
+    if (skip_whitespace(in) != r_ok) {
+      return r_err;
+    }
+    if (get_number_pos(in, starting_pos.row) != r_ok) {
       return r_err;
     }
 
-    skip_whitespace(text);
-    if (get_heading(text, head) != r_ok) {
+    if (skip_whitespace(in) != r_ok) {
+      return r_err;
+    }
+    if (get_heading(in, head) != r_ok) {
       return r_err;
     }
     return r_ok;
   }
 
-  static result get_next_target(char ** text, Point &next_target, bool &col_first, unsigned &tar_time) {
-    if (**text != '\0' && !isWhitespace(**text)) {
+  static result get_next_target(Reader &in, Point &next_target, bool &col_first, unsigned &tar_time) {
+    if (in.get_current() != '\0' && !isWhitespace(in.get_current())) {
       return r_err;
     }
     
-    skip_whitespace(text);
-    if (**text == '\0') {
+    if (skip_whitespace(in) == r_eof) {
       return r_eof;
     }
 
-    skip_whitespace(text);
-
-    if (isAlpha(**text)) {
+    if (isAlpha(in.get_current())) {
       col_first = true;
-      if (get_char_pos(text, next_target.col) != r_ok) {
+      if (get_char_pos(in, next_target.col) != r_ok) {
         return r_err;
       }
 
-      skip_whitespace(text);
-      if (get_number_pos(text, next_target.row) != r_ok) {
+      if (skip_whitespace(in) != r_ok) {
+        return r_err;
+      }
+      if (get_number_pos(in, next_target.row) != r_ok) {
         return r_err;
       } 
     }
     else {
       col_first = false;
-      if (get_number_pos(text, next_target.row) != r_ok) {
+      if (get_number_pos(in, next_target.row) != r_ok) {
         return r_err;
       }
 
-      skip_whitespace(text);
-      if (get_char_pos(text, next_target.col) != r_ok) {
+      if (skip_whitespace(in) != r_ok) {
+        return r_err;
+      }
+      if (get_char_pos(in, next_target.col) != r_ok) {
         return r_err;
       }   
     }
 
-    skip_whitespace(text);
+    if (skip_whitespace(in) != r_ok) {
+      return r_err;
+    }
 
-    if (get_time(text, tar_time) != r_ok) {
+    if (get_time(in, tar_time) != r_ok) {
       return r_err;
     }
     return r_ok;
   }
 
   void delete_list() {
-    Waypoint_Node * current = point_list_;
-    while (current) {
-       Waypoint_Node * to_delete = current;
-       current = current->next;
-       delete(to_delete);
+    while (point_list_) {
+      Waypoint_Node * to_delete = point_list_;
+      point_list_ = point_list_->next;
+      delete(to_delete);
     }
   }
 };
