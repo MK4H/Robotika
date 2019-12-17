@@ -7,7 +7,7 @@
 
 class Point {
 public:
-  unsigned x,y;
+  byte col,row;
 
   Point()
     :Point(0,0)
@@ -15,29 +15,31 @@ public:
     
   }
 
-  Point(unsigned x, unsigned y)
-    :x(x), y(y)
+  Point(byte col, byte row)
+    :col(col), row(row)
   {
     
   }
   
-  unsigned x_dist_to(Point p) {
-    return p.x - x;  
+  byte col_dist_to(Point p) {
+    return p.col - col;  
   }
 
-  unsigned y_dist_to(Point p) {
-    return p.y - y;
+  byte y_dist_to(Point p) {
+    return p.row - row;
   }
 };
 
 class Waypoint_Node {
 public:
   Point p;
+  bool col_first;
   unsigned tim;
+  
   Waypoint_Node * next;
   
-  Waypoint_Node(Point p, unsigned tim, Waypoint_Node * next) 
-    :p(p), tim(tim), next(next)
+  Waypoint_Node(Point p, bool col_first, unsigned tim, Waypoint_Node * next) 
+    :p(p), col_first(col_first), tim(tim), next(next)
   {
     
   }
@@ -48,20 +50,21 @@ public:
   static result parse_input(char * input, Itinerary &it) {
     char * input_left = input;
     
-    if (get_starting_pos(&input_left, it.c_pos_, it.c_head_) != r_ok) {
+    if (get_starting_pos(&input_left, it.start_pos_, it.start_head_) != r_ok) {
       return r_err;
     }
     result res;
     Point new_point;
+    bool new_col_first;
     unsigned new_tim;
     Waypoint_Node ** next_link = &it.point_list_;
-    while ((res = get_next_target(&input_left, new_point, new_tim)) == r_ok) {
-      *next_link = new Waypoint_Node(new_point, new_tim, nullptr);
+    while ((res = get_next_target(&input_left, new_point, new_col_first, new_tim)) == r_ok) {
+      *next_link = new Waypoint_Node(new_point, new_col_first, new_tim, nullptr);
       next_link = &((*next_link)->next);
     }
 
     if (res == r_ok || res == r_eof) {
-      it.target_ = it.point_list_->next;
+      it.target_ = it.point_list_;
       return r_ok;
     }
     else {
@@ -71,7 +74,7 @@ public:
   }
 
   Itinerary() 
-    :point_list_(nullptr), c_pos_(0,0), c_head_(north), target_(nullptr)
+    :point_list_(nullptr), start_pos_(0,0), start_head_(north), target_(nullptr)
   {
     
   }
@@ -80,12 +83,32 @@ public:
     delete_list();
   }
   
+  Point get_start_pos() const {
+    return start_pos_;
+  }
+
+  headings get_start_heading() const {
+    return start_head_;
+  }
+
+  Waypoint_Node * get_target_waypoint() const {
+    return target_;
+  }
+
+  bool advance_waypoint() {
+    target_ = target_->next;
+    return target_ == nullptr;
+  }
+
+  void reset() {
+    target_ = point_list_;
+  }
 private:
 
   Waypoint_Node * point_list_;
 
-  Point c_pos_;
-  headings c_head_;
+  Point start_pos_;
+  headings start_head_;
 
   Waypoint_Node * target_;
 
@@ -137,7 +160,7 @@ private:
     }
   }
 
-  static result get_char_pos(char ** text, unsigned &pos) {
+  static result get_char_pos(char ** text, byte &pos) {
     char char_pos = get_and_move(text);
     if (!isAlpha(char_pos)) {
       return r_err;
@@ -155,15 +178,17 @@ private:
     return r_err;
   }
 
-  static result get_number_pos(char ** text, unsigned &pos) {
-    if (get_number(text, pos) != r_ok) {
+  static result get_number_pos(char ** text, byte &pos) {
+    unsigned new_num;
+    if (get_number(text, new_num) != r_ok) {
       return r_err;
     }
-    if (pos < 1 || 9 < pos) {
+    if (new_num < 1 || 9 < new_num) {
       return r_err;
     }
     //Offset to 0 based indexing
-    pos -= 1;
+    new_num -= 1;
+    pos = (byte)new_num;
     return r_ok;
   }
 
@@ -179,40 +204,59 @@ private:
   
   static result get_starting_pos(char ** text, Point &starting_pos, headings &head) {
     skip_whitespace(text);
-    if (get_char_pos(text, starting_pos.x) != r_ok) {
+    if (get_char_pos(text, starting_pos.col) != r_ok) {
       return r_err;
     }
 
-    if (get_number_pos(text, starting_pos.y) != r_ok) {
+    skip_whitespace(text);
+    if (get_number_pos(text, starting_pos.row) != r_ok) {
       return r_err;
     }
 
+    skip_whitespace(text);
     if (get_heading(text, head) != r_ok) {
       return r_err;
     }
     return r_ok;
   }
 
-  static result get_next_target(char ** text, Point &next_target, unsigned &tar_time) {
+  static result get_next_target(char ** text, Point &next_target, bool &col_first, unsigned &tar_time) {
+    if (**text != '\0' && !isWhitespace(**text)) {
+      return r_err;
+    }
+    
     skip_whitespace(text);
     if (**text == '\0') {
       return r_eof;
     }
-    
-    if (get_char_pos(text, next_target.x) != r_ok) {
-      return r_err;
-    }
 
-    if (get_number_pos(text, next_target.y) != r_ok) {
-      return r_err;
-    }
-
-    if (!isWhitespace(**text)) {
-      return r_err;
-    }
-    
     skip_whitespace(text);
-    
+
+    if (isAlpha(**text)) {
+      col_first = true;
+      if (get_char_pos(text, next_target.col) != r_ok) {
+        return r_err;
+      }
+
+      skip_whitespace(text);
+      if (get_number_pos(text, next_target.row) != r_ok) {
+        return r_err;
+      } 
+    }
+    else {
+      col_first = false;
+      if (get_number_pos(text, next_target.row) != r_ok) {
+        return r_err;
+      }
+
+      skip_whitespace(text);
+      if (get_char_pos(text, next_target.col) != r_ok) {
+        return r_err;
+      }   
+    }
+
+    skip_whitespace(text);
+
     if (get_time(text, tar_time) != r_ok) {
       return r_err;
     }
