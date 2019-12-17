@@ -1,3 +1,6 @@
+#ifndef Button_c
+#define Button_c
+
 #include <Arduino.h>
 
 class Button {
@@ -56,3 +59,5 @@ private:
   bool was_unpressed_;
   unsigned long PressedTime = millis();
   };
+
+  #endif // Button_c

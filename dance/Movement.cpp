@@ -1,3 +1,6 @@
+#ifndef Movement_c
+#define Movement_c
+
 #include <Arduino.h>
 #include <Servo.h>
 
@@ -73,3 +76,5 @@ private:
     return percent;
   }
 };
+
+#endif // Movement_c

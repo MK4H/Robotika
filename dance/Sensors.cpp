@@ -1,3 +1,6 @@
+#ifndef Sensors_c
+#define Sensors_c
+
 #include <Arduino.h>
 
 enum sensor {f_left = 0, c_left = 1, center = 2, c_right = 3, f_right = 4};
@@ -41,3 +44,5 @@ private:
     return state & (1 << (3 + sensor)); 
   }
 };
+
+#endif // Sensors_c
