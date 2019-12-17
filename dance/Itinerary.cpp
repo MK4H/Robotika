@@ -214,6 +214,10 @@ private:
     if (!in.move_next()) {
       return r_err;
     }
+
+    if (skip_whitespace(in) != r_ok) {
+      return r_err;
+    }
     return get_number(in, number);
   }
   
