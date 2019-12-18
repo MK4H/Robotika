@@ -10,7 +10,7 @@ public:
 
 class StringReader : public Reader {
 public:
-    StringReader(char *str) : orig_(str),str_(str) {
+    StringReader(const char *str) : orig_(str),str_(str) {
 
     }
 
@@ -30,8 +30,8 @@ public:
         return str_ - orig_;
     }
 private:
-    char *orig_;
-    char *str_;
+    const char *orig_;
+    const char *str_;
 };
 
 #endif // Reader_c

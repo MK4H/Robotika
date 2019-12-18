@@ -57,8 +57,8 @@ public:
 
 class Itinerary {
 public:
-  result parse_input(Reader &in) {
-    if (get_starting_pos(in, start_pt_, start_head_) != r_ok) {
+  result parse_input(Reader &in, const char ** error_msg) {
+    if (get_starting_pos(in, start_pt_, start_head_, error_msg) != r_ok) {
       return r_err;
     }
     result res;
@@ -66,7 +66,7 @@ public:
     bool new_col_first;
     unsigned new_tim;
     Waypoint_Node ** next_link = &point_list_;
-    while ((res = get_next_target(in, new_point, new_col_first, new_tim)) == r_ok) {
+    while ((res = get_next_target(in, new_point, new_col_first, new_tim, error_msg)) == r_ok) {
       *next_link = new Waypoint_Node(Waypoint(new_point, new_col_first, new_tim), nullptr);
       next_link = &((*next_link)->next);
     }
@@ -110,7 +110,7 @@ public:
     if (target_) {
       target_ = target_->next;
     }
-    return target_ == nullptr;
+    return target_ != nullptr;
   }
 
   void reset() {
@@ -141,10 +141,11 @@ private:
     return r_ok;
   }
 
-  static result get_number(Reader &in, unsigned &number) {
+  static result get_number(Reader &in, unsigned &number, const char **error_msg) {
     number = 0;
 
     if (!isDigit(in.get_current())) {
+      *error_msg = "Expected number";
       return r_err;
     }
 
@@ -157,57 +158,69 @@ private:
     return r_ok;
   }
 
-  static result get_heading(Reader &in, headings &head) {
+  static result get_heading(Reader &in, headings &head, const char **error_msg) {
     char c = in.get_current();
-    in.move_next();
     switch (c) {
       case 'n':
       case 'N':
         head = north;
-        return r_ok;
+        break;
       case 'e':
       case 'E':
         head = east;
-        return r_ok;
+        break;
       case 's':
       case 'S':
         head = south;
-        return r_ok;
+        break;
       case 'w':
       case 'W':
         head = west;
-        return r_ok;
+        break;
       default:
+        *error_msg = "Unknown heading, expected [nN]|[eE]|[sS]|[wW]";
         return r_err;
     }
+    in.move_next();
+    return r_ok;
   }
 
-  static result get_char_pos(Reader &in, byte &pos) {
+  static result get_char_pos(Reader &in, byte &pos, const char **error_msg) {
     char char_pos = in.get_current();
-    in.move_next();
 
     if (!isAlpha(char_pos)) {
+      *error_msg = "Unknown character, expected a-iA-I";
       return r_err;
     }
 
     if (isLowerCase(char_pos)) {
       pos = char_pos - 'a';
-      return r_ok;
     }
 
     if (isUpperCase(char_pos)) {
       pos = char_pos - 'A';
-      return r_ok;
     }
-    return r_err;
+    else {
+      *error_msg = "Unknown character, expected a-iA-I";
+      return r_err;
+    }
+
+    if (pos > 8) {
+      *error_msg = "Position out of range a-iA-I";
+      return r_err;
+    }
+
+    in.move_next();
+    return r_ok;
   }
 
-  static result get_number_pos(Reader &in, byte &pos) {
+  static result get_number_pos(Reader &in, byte &pos, const char ** error_msg) {
     unsigned new_num;
-    if (get_number(in, new_num) != r_ok) {
+    if (get_number(in, new_num, error_msg) != r_ok) {
       return r_err;
     }
     if (new_num < 1 || 9 < new_num) {
+      *error_msg = "Position out of range 1-9";
       return r_err;
     }
     //Offset to 0 based indexing
@@ -216,48 +229,55 @@ private:
     return r_ok;
   }
 
-  static result get_time(Reader &in, unsigned &number) {
+  static result get_time(Reader &in, unsigned &number, const char ** error_msg) {
     if (in.get_current() != 't' && in.get_current() != 'T') {
+      *error_msg = "Expected t/T time delimiter";
       number = 0;
       return r_err;
     }
     //Skip T
     if (!in.move_next()) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
 
     if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
-    return get_number(in, number);
+    return get_number(in, number, error_msg);
   }
   
-  static result get_starting_pos(Reader &in, Point &starting_pos, headings &head) {
+  static result get_starting_pos(Reader &in, Point &starting_pos, headings &head, const char **error_msg) {
     if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
-    if (get_char_pos(in, starting_pos.col) != r_ok) {
+    if (get_char_pos(in, starting_pos.col, error_msg) != r_ok) {
       return r_err;
     }
 
     if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
-    if (get_number_pos(in, starting_pos.row) != r_ok) {
+    if (get_number_pos(in, starting_pos.row, error_msg) != r_ok) {
       return r_err;
     }
 
     if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
-    if (get_heading(in, head) != r_ok) {
+    if (get_heading(in, head, error_msg) != r_ok) {
       return r_err;
     }
     return r_ok;
   }
 
-  static result get_next_target(Reader &in, Point &next_target, bool &col_first, unsigned &tar_time) {
+  static result get_next_target(Reader &in, Point &next_target, bool &col_first, unsigned &tar_time, const char ** error_msg) {
     if (in.get_current() != '\0' && !isWhitespace(in.get_current())) {
+      *error_msg = "Expected whitespace";
       return r_err;
     }
     
@@ -267,36 +287,40 @@ private:
 
     if (isAlpha(in.get_current())) {
       col_first = true;
-      if (get_char_pos(in, next_target.col) != r_ok) {
+      if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
         return r_err;
       }
 
       if (skip_whitespace(in) != r_ok) {
+        *error_msg = "Unexpected end of input";
         return r_err;
       }
-      if (get_number_pos(in, next_target.row) != r_ok) {
+
+      if (get_number_pos(in, next_target.row, error_msg) != r_ok) {
         return r_err;
       } 
     }
     else {
       col_first = false;
-      if (get_number_pos(in, next_target.row) != r_ok) {
+      if (get_number_pos(in, next_target.row, error_msg) != r_ok) {
         return r_err;
       }
 
       if (skip_whitespace(in) != r_ok) {
+        *error_msg = "Unexpected end of input";
         return r_err;
       }
-      if (get_char_pos(in, next_target.col) != r_ok) {
+      if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
         return r_err;
       }   
     }
 
     if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
       return r_err;
     }
 
-    if (get_time(in, tar_time) != r_ok) {
+    if (get_time(in, tar_time, error_msg) != r_ok) {
       return r_err;
     }
     return r_ok;
