@@ -30,16 +30,26 @@ public:
   }
 };
 
-class Waypoint_Node {
+class Waypoint {
 public:
-  Point p;
+  Point pt;
   bool col_first;
   unsigned tim;
   
+  Waypoint(Point pt, bool col_first, unsigned tim) 
+    :pt(pt), col_first(col_first), tim(tim)
+  {
+
+  }
+};
+
+class Waypoint_Node {
+public:
+  Waypoint wp;
   Waypoint_Node * next;
   
-  Waypoint_Node(Point p, bool col_first, unsigned tim, Waypoint_Node * next) 
-    :p(p), col_first(col_first), tim(tim), next(next)
+  Waypoint_Node(Waypoint wp, Waypoint_Node * next) 
+    :wp(wp), next(next)
   {
     
   }
@@ -48,7 +58,7 @@ public:
 class Itinerary {
 public:
   result parse_input(Reader &in) {
-    if (get_starting_pos(in, start_pos_, start_head_) != r_ok) {
+    if (get_starting_pos(in, start_pt_, start_head_) != r_ok) {
       return r_err;
     }
     result res;
@@ -57,7 +67,7 @@ public:
     unsigned new_tim;
     Waypoint_Node ** next_link = &point_list_;
     while ((res = get_next_target(in, new_point, new_col_first, new_tim)) == r_ok) {
-      *next_link = new Waypoint_Node(new_point, new_col_first, new_tim, nullptr);
+      *next_link = new Waypoint_Node(Waypoint(new_point, new_col_first, new_tim), nullptr);
       next_link = &((*next_link)->next);
     }
 
@@ -72,7 +82,7 @@ public:
   }
 
   Itinerary() 
-    :point_list_(nullptr), start_pos_(0,0), start_head_(north), target_(nullptr)
+    :point_list_(nullptr), start_pt_(0,0), start_head_(north), target_(nullptr)
   {
     
   }
@@ -83,16 +93,17 @@ public:
     delete_list();
   }
   
-  Point get_start_pos() const {
-    return start_pos_;
+
+  Point get_start_pt() const {
+    return start_pt_;
   }
 
   headings get_start_heading() const {
     return start_head_;
   }
 
-  Waypoint_Node * get_target_waypoint() const {
-    return target_;
+  Waypoint get_target_waypoint() const {
+    return target_->wp;
   }
 
   bool advance_waypoint() {
@@ -109,7 +120,7 @@ private:
 
   Waypoint_Node * point_list_;
 
-  Point start_pos_;
+  Point start_pt_;
   headings start_head_;
 
   Waypoint_Node * target_;
