@@ -58,7 +58,7 @@ public:
 class Itinerary {
 public:
   result parse_input(Reader &in, const char ** error_msg) {
-    if (get_starting_pos(in, start_pt_, start_head_, error_msg) != r_ok) {
+    if (get_start_waypoint(in, start_wp_, start_head_, error_msg) != r_ok) {
       return r_err;
     }
     result res;
@@ -82,7 +82,7 @@ public:
   }
 
   Itinerary() 
-    :point_list_(nullptr), start_pt_(0,0), start_head_(north), target_(nullptr)
+    :point_list_(nullptr), start_wp_(Point(0, 0), false, 0), start_head_(north), target_(nullptr)
   {
     
   }
@@ -94,8 +94,8 @@ public:
   }
   
 
-  Point get_start_pt() const {
-    return start_pt_;
+  Waypoint get_start_waypoint() const {
+    return start_wp_;
   }
 
   headings get_start_heading() const {
@@ -120,7 +120,7 @@ private:
 
   Waypoint_Node * point_list_;
 
-  Point start_pt_;
+  Waypoint start_wp_;
   headings start_head_;
 
   Waypoint_Node * target_;
@@ -248,20 +248,13 @@ private:
     return get_number(in, number, error_msg);
   }
   
-  static result get_starting_pos(Reader &in, Point &starting_pos, headings &head, const char **error_msg) {
+  static result get_starting_pos(Reader &in, Waypoint &starting_wp, headings &head, const char **error_msg) {
     if (skip_whitespace(in) != r_ok) {
       *error_msg = "Unexpected end of input";
       return r_err;
     }
-    if (get_char_pos(in, starting_pos.col, error_msg) != r_ok) {
-      return r_err;
-    }
-
-    if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
-      return r_err;
-    }
-    if (get_number_pos(in, starting_pos.row, error_msg) != r_ok) {
+    
+    if (get_pos(in, starting_wp.pt, starting_wp.col_first, error_msg) != r_ok) {
       return r_err;
     }
 
@@ -285,6 +278,22 @@ private:
       return r_eof;
     }
 
+    if (get_pos(in, next_target, col_first, error_msg) != r_ok) {
+      return r_err;
+    }
+
+    if (skip_whitespace(in) != r_ok) {
+      *error_msg = "Unexpected end of input";
+      return r_err;
+    }
+
+    if (get_time(in, tar_time, error_msg) != r_ok) {
+      return r_err;
+    }
+    return r_ok;
+  }
+
+  static result get_pos(Reader &in, Point &pos, bool &col_first, const char ** error_msg) {
     if (isAlpha(in.get_current())) {
       col_first = true;
       if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
@@ -313,15 +322,6 @@ private:
       if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
         return r_err;
       }   
-    }
-
-    if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
-      return r_err;
-    }
-
-    if (get_time(in, tar_time, error_msg) != r_ok) {
-      return r_err;
     }
     return r_ok;
   }
