@@ -58,7 +58,7 @@ public:
 class Itinerary {
 public:
   result parse_input(Reader &in, const char ** error_msg) {
-    if (get_start_waypoint(in, start_wp_, start_head_, error_msg) != r_ok) {
+    if (get_starting_state(in, start_wp_, start_head_, error_msg) != r_ok) {
       return r_err;
     }
     result res;
@@ -248,7 +248,7 @@ private:
     return get_number(in, number, error_msg);
   }
   
-  static result get_starting_pos(Reader &in, Waypoint &starting_wp, headings &head, const char **error_msg) {
+  static result get_starting_state(Reader &in, Waypoint &starting_wp, headings &head, const char **error_msg) {
     if (skip_whitespace(in) != r_ok) {
       *error_msg = "Unexpected end of input";
       return r_err;
@@ -296,7 +296,7 @@ private:
   static result get_pos(Reader &in, Point &pos, bool &col_first, const char ** error_msg) {
     if (isAlpha(in.get_current())) {
       col_first = true;
-      if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
+      if (get_char_pos(in, pos.col, error_msg) != r_ok) {
         return r_err;
       }
 
@@ -305,13 +305,13 @@ private:
         return r_err;
       }
 
-      if (get_number_pos(in, next_target.row, error_msg) != r_ok) {
+      if (get_number_pos(in, pos.row, error_msg) != r_ok) {
         return r_err;
       } 
     }
     else {
       col_first = false;
-      if (get_number_pos(in, next_target.row, error_msg) != r_ok) {
+      if (get_number_pos(in, pos.row, error_msg) != r_ok) {
         return r_err;
       }
 
@@ -319,7 +319,7 @@ private:
         *error_msg = "Unexpected end of input";
         return r_err;
       }
-      if (get_char_pos(in, next_target.col, error_msg) != r_ok) {
+      if (get_char_pos(in, pos.col, error_msg) != r_ok) {
         return r_err;
       }   
     }
