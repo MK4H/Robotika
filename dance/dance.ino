@@ -80,6 +80,18 @@ void loop() {
   else
     mov->stop();
 
+  // Moje myslenka je naparsovat to do itinerary a cekat na button press,
+  // pri button pressu pak nastavit state na st_drive a jedeme
+
+  /* WHEN YOU ARE READY TO HAND OFF CONTROL TO THE DRIVER, JUST START CALLING THE LOOP
+  // The itinerary has to be already parsed and filled, from wherever
+  // BUTTON RESET MEMORY MUST BE CALLED AFTER THE driver->loop() call
+  if (state == st_drive) {
+    driver->loop();
+  }
+  button.reset_memory();
+  */
+
   /*if(button.was_long_pressed() ){
     if(dioda){
       digitalWrite(diode_pin, HIGH);
