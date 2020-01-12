@@ -36,6 +36,12 @@ public:
   bool col_first;
   unsigned tim;
   
+  Waypoint()
+    :pt(), col_first(false), tim(0)
+  {
+
+  }
+
   Waypoint(Point pt, bool col_first, unsigned tim) 
     :pt(pt), col_first(col_first), tim(tim)
   {

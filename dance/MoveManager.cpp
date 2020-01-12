@@ -125,6 +125,10 @@ public:
     forward_counter = 0;
   }
   
+  int get_forward_segments() const {
+    return forward_segments;
+  }
+
 private:
   // Forward variables
   int forward_segments = -1;    // Remaining segments for forward move

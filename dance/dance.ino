@@ -4,6 +4,7 @@
 #include "Movement.cpp"
 #include "Itinerary.cpp"
 #include "MoveManager.cpp"
+#include "Driver.cpp"
 
 const int left_pin = 12;
 const int right_pin = 13;
@@ -13,7 +14,9 @@ const int diode_pin = 11;
 Movement *mov;
 Sensors *sens;
 Button button;
+Itinerary itin;
 MoveManager *move_manager;
+Driver *driver;
 int state = st_stop;
 bool dioda = false;
 
@@ -23,6 +26,7 @@ void setup() {
   mov = new Movement();
   sens = new Sensors();
   move_manager = new MoveManager(mov, sens);
+  driver = new Driver(&itin, move_manager, &button);
   mov->attach(left_pin, right_pin);
   pinMode(button_pin, INPUT_PULLUP);
   pinMode(diode_pin, OUTPUT);
