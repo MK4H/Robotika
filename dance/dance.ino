@@ -82,6 +82,8 @@ void loop() {
 
   // Moje myslenka je naparsovat to do itinerary a cekat na button press,
   // pri button pressu pak nastavit state na st_drive a jedeme
+  
+  // driver->init_from_itin();
 
   /* WHEN YOU ARE READY TO HAND OFF CONTROL TO THE DRIVER, JUST START CALLING THE LOOP
   // The itinerary has to be already parsed and filled, from wherever

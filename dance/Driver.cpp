@@ -9,8 +9,11 @@ class Driver {
 public:
     Driver(Itinerary * itin, MoveManager * move, Button *button)
         : itin_(itin), move_(move), butt_(button), start_time_(0),
-          pos_(), heading_(north), target_(), state_(state::wait), 
+          pos_(), heading_(north), target_(), state_(state::startup), 
           going_home_(true), button_pressed_(false) {
+    }
+
+    void init_from_itin() {
         pos_ = itin_->get_start_waypoint().pt;
         heading_ = itin_->get_start_heading();
         target_ = itin_->get_target_waypoint();
