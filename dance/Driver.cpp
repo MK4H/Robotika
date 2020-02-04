@@ -20,6 +20,7 @@ public:
         pos_ = itin_->get_start_waypoint().pt;
         heading_ = itin_->get_start_heading();
         target_ = itin_->get_target_waypoint();
+        move_->SetHeading(heading_);
     }
 
     void loop() {

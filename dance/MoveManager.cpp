@@ -9,8 +9,13 @@
 class MoveManager
 {
 public: 
-  MoveManager(Movement *mov, Sensors *sens):mov(mov),sens(sens) {
+  MoveManager(Movement *mov, Sensors *sens):mov(mov),sens(sens) 
+  {
+  }
 
+  void SetHeading(int heading)
+  {
+    actual_heading = heading;
   }
 
   bool move_forward(int segments)
