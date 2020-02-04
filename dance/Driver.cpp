@@ -1,6 +1,7 @@
 #ifndef Driver_c
 #define Driver_c
 
+#include <Arduino.h>
 #include "Itinerary.cpp"
 #include "MoveManager.cpp"
 #include "Button.cpp"
@@ -14,6 +15,7 @@ public:
     }
 
     void init_from_itin() {
+        itin_->reset();
         pos_ = itin_->get_start_waypoint().pt;
         heading_ = itin_->get_start_heading();
         target_ = itin_->get_target_waypoint();
@@ -28,6 +30,7 @@ public:
         switch (state_)
         {
         case state::startup: 
+            Serial.print("startup");
             if (check_and_reset(button_pressed_)) {
                 itin_->reset();
                 start_time_ = millis();
@@ -35,32 +38,38 @@ public:
             }
             break;
         case state::forward:
+            Serial.print("forward");
             if (move_forward(button_pressed_)) {
                 follow_path();
             }
             break;
         case state::turn_left:
+            Serial.print("turnleft");
             if (turn(state::turn_left, button_pressed_)) {
                 follow_path();
             }
             break;
         case state::turn_right:
+            Serial.print("turnright");
             if (turn(state::turn_right, button_pressed_)) {
                 follow_path();
             }
             break;
         case state::wait:
+            Serial.print("wait");
             if (wait(button_pressed_)) {
                 follow_path();
             }
             break;
         case state::finished:
+            Serial.print("finished");
             if (check_and_reset(button_pressed_)) {
                 go_home();
                 follow_path();
             }
             break;
         default:
+            Serial.print("Unknown state v driver loop");
             //TODO: Error
             break;
         }

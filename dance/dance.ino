@@ -77,6 +77,11 @@ void loop() {
       state = st_stop;
     }
   }
+
+  if (button.was_long_pressed()) {
+    state = st_stop;
+    driver->init_from_itin();
+  }
   
 
 
@@ -113,7 +118,7 @@ void loop() {
   // The itinerary has to be already parsed and filled, from wherever
   // BUTTON RESET MEMORY MUST BE CALLED AFTER THE driver->loop() call
   if (state == st_drive) {
-    Serial.print("-in drive-ln");
+    Serial.print("-in drive-ln\n");
     driver->loop();
   }
   button.reset_memory();
