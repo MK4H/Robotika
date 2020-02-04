@@ -103,17 +103,24 @@ public:
       if (quarters == 0)
         return true;
 
+      Serial.print("Quarters to rotate: ");
+      Serial.println(quarters);
+      
       for (int i = 1; i <= num_headings; ++i)
       {      
-        if(actual_crossroad[(actual_heading - i) % num_headings])
-          rotate_cross_lines =  quarters / 4 + (quarters % 4 >= i) ? 1 : 0;
+        if(actual_crossroad[(actual_heading - i + 4) % num_headings])
+          rotate_cross_lines +=  quarters / 4 + ((quarters % 4 >= i) ? 1 : 0);
       }
+
+      Serial.print("CrossLines: ");
+      Serial.println(rotate_cross_lines);
       
       actual_heading = (actual_heading + quarters) % num_headings;
     }
     
     if(turn_right())
     {
+      Serial.println("Turning right completed");
       reset();
       return true;
     }
@@ -145,7 +152,7 @@ private:
 
   // Navigation variables
   int actual_heading = 0;   // actual heading of the robot based on rotating and init heading
-  bool actual_crossroad[num_headings] = { true, false, true, false};    // Crossroad shape - initial shape is path to the north and path to the east
+  bool actual_crossroad[num_headings] = { true, false, false, true};    // Crossroad shape - initial shape is path to the north and path to the east
 
   Movement *mov;
   Sensors *sens;

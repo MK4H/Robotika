@@ -11,7 +11,7 @@ public:
     Driver(Itinerary * itin, MoveManager * move, Button *button)
         : itin_(itin), move_(move), butt_(button), start_time_(0),
           pos_(), heading_(north), target_(), state_(state::startup), 
-          going_home_(true), button_pressed_(false) {
+          going_home_(false), button_pressed_(false) {
     }
 
     void init_from_itin() {
@@ -21,11 +21,16 @@ public:
         heading_ = itin_->get_start_heading();
         target_ = itin_->get_target_waypoint();
         move_->SetHeading(heading_);
+        going_home_ = false;
     }
 
     void loop() {
         if (butt_->was_pressed()) {
             button_pressed_ = true;
+        }
+
+        if (button_pressed_) {
+            Serial.println("Button is pressed");
         }
 
         // State machine
@@ -148,6 +153,7 @@ private:
         while (!get_next_move(pos_, heading_, target_, state_ , amount_)) {
             // Arrived at the target, it's time to move on
             if (going_home_) {
+                Serial.println("GOING HOME");
                 if (heading_ == itin_->get_start_heading()) {
                     rotate(pos_, heading_, itin_->get_start_heading(), state_, amount_);
                     return;
@@ -206,19 +212,9 @@ private:
     }
 
     static void update_heading(headings &heading, state turn_state, int amount) {
-        if (turn_state == state::turn_left) {
-            heading = (headings)((heading + amount) % num_headings);
-        }
-        else if (turn_state == state::turn_right) {
-            int res = heading - amount;
-            if (res < 0) {
-                res = num_headings - res;
-            }
-            heading = (headings)res;
-        }
-        else {
-            //TODO: Error
-        }
+        Serial.print("Init heading: "); Serial.println(heading);
+        heading = (heading + num_headings + (turn_state == state::turn_left ? amount : -amount)) % num_headings;
+        Serial.print("Result heading: "); Serial.println(heading);
     }
 
     /**
