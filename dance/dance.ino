@@ -21,6 +21,7 @@ Driver *driver;
 int state = st_stop;
 bool dioda = false;
 const char* choreo = "A1N c2 t120 d4 t0 b5 t0";
+//const char* choreo = "A1N c2 t120";
 
 void setup() {
   // put your setup code here, to run once:
@@ -36,12 +37,10 @@ void setup() {
   char * err_msg;
   Serial.println("setup before parse");
 
-  while (rdr.move_next()) {
-
-  }
-
   Serial.println("read finished");
-  itin.parse_input(rdr , &err_msg);
+  if (itin.parse_input(rdr , &err_msg) != r_ok) {
+    Serial.println(err_msg);
+  }
   Serial.println("setup before driver");
   driver = new Driver(&itin, move_manager, &button);
   Serial.println("exception when init driver baby");

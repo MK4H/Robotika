@@ -228,30 +228,46 @@ private:
      *     false if we have reached the `target`.
      */
     static bool get_next_move(Point c_pos, headings c_head, Waypoint target, state &ret_state, int &ret_amount) {
+        Serial.print("Current position: ");
+        Serial.print(c_pos.col);
+        Serial.print(", ");
+        Serial.println(c_pos.row);
+        
+        Serial.print("Target position: ");
+        Serial.print(target.pt.col);
+        Serial.print(", ");
+        Serial.println(target.pt.row);
+
         // If the robot is at the target position
         if ((c_pos.col == target.pt.col) && (c_pos.row == target.pt.row)) {
             // Arrived at target, ready to contiue
+            Serial.print("Arrived");
             return false;
         }
 
         // If the robot should go to target COLUMN first and is not at the COLUMN
         if (target.col_first && (c_pos.col != target.pt.col)) {
+            Serial.print("First to column");
             get_to_column(c_pos, c_head, target, ret_state, ret_amount);
         }
         // If it should go to target ROW first and is not at the ROW
         else if (!target.col_first && (c_pos.row != target.pt.row)) {
+            Serial.print("First to row");
             get_to_row(c_pos, c_head, target, ret_state, ret_amount);
         }
         // Is at the first target coord, check if the second is columns
         else if (c_pos.col != target.pt.col) {
+            Serial.print("Second to column");
             get_to_column(c_pos, c_head, target, ret_state, ret_amount);
         }
         // Or if it is rows
         else if (c_pos.row != target.pt.row) {
+            Serial.print("Second to row");
             get_to_row(c_pos, c_head, target, ret_state, ret_amount);
         }
         else {
             //TODO: Error
+            Serial.print("Error next move");
         }
         return true;
     }
@@ -271,13 +287,19 @@ private:
         int half_rotation = num_headings/2;
         int change = to - from;
         
+        Serial.print("Change: ");
+        Serial.println(change);
+
         if (change < -half_rotation) {
-            change = -half_rotation + change;
+            change = -half_rotation - change;
         }
         else if (change > half_rotation) {
             change = half_rotation - change;
         }
         
+        Serial.print("Ret amount: ");
+        Serial.println(change);
+
         ret_amount = change;
 
         if (change == half_rotation || change == -half_rotation) {
@@ -302,6 +324,7 @@ private:
         else {
             ret_state = state::turn_right;
         }
+        ret_amount = abs(ret_amount);
     }
 
     static void get_to_column(Point c_pos, headings c_head, Waypoint target, state &ret_state, int &ret_amount) {
@@ -310,6 +333,8 @@ private:
             rotate(c_pos, c_head, west, ret_state, ret_amount);
         }
         else if (diff > 0 && c_head != east) {
+            Serial.print("Heading: ");
+            Serial.println(c_head);
             rotate(c_pos, c_head, east, ret_state, ret_amount);
         }
         else {

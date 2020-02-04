@@ -73,6 +73,9 @@ public:
     unsigned new_tim;
     Waypoint_Node ** next_link = &point_list_;
     while ((res = get_next_target(in, new_point, new_col_first, new_tim, error_msg)) == r_ok) {
+      Serial.print(new_point.col);
+      Serial.print(", ");
+      Serial.println(new_point.row);
       *next_link = new Waypoint_Node(Waypoint(new_point, new_col_first, new_tim), nullptr);
       next_link = &((*next_link)->next);
     }
@@ -151,6 +154,7 @@ private:
     number = 0;
 
     if (!isDigit(in.get_current())) {
+      Serial.println(in.get_current());
       *error_msg = "Expected number";
       return r_err;
     }
@@ -202,8 +206,7 @@ private:
     if (isLowerCase(char_pos)) {
       pos = char_pos - 'a';
     }
-
-    if (isUpperCase(char_pos)) {
+    else if (isUpperCase(char_pos)) {
       pos = char_pos - 'A';
     }
     else {
@@ -243,12 +246,12 @@ private:
     }
     //Skip T
     if (!in.move_next()) {
-      *error_msg = "Unexpected end of input";
+      *error_msg = "Unexpected end of input1";
       return r_err;
     }
 
     if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
+      *error_msg = "Unexpected end of input2";
       return r_err;
     }
     return get_number(in, number, error_msg);
@@ -256,7 +259,7 @@ private:
   
   static result get_starting_state(Reader &in, Waypoint &starting_wp, headings &head, const char **error_msg) {
     if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
+      *error_msg = "Unexpected end of input3";
       return r_err;
     }
     
@@ -265,7 +268,7 @@ private:
     }
 
     if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
+      *error_msg = "Unexpected end of input4";
       return r_err;
     }
     if (get_heading(in, head, error_msg) != r_ok) {
@@ -289,7 +292,7 @@ private:
     }
 
     if (skip_whitespace(in) != r_ok) {
-      *error_msg = "Unexpected end of input";
+      *error_msg = "Unexpected end of input5";
       return r_err;
     }
 
@@ -307,7 +310,7 @@ private:
       }
 
       if (skip_whitespace(in) != r_ok) {
-        *error_msg = "Unexpected end of input";
+        *error_msg = "Unexpected end of input6";
         return r_err;
       }
 
@@ -322,7 +325,7 @@ private:
       }
 
       if (skip_whitespace(in) != r_ok) {
-        *error_msg = "Unexpected end of input";
+        *error_msg = "Unexpected end of input7";
         return r_err;
       }
       if (get_char_pos(in, pos.col, error_msg) != r_ok) {
