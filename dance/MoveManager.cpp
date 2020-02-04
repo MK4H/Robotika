@@ -35,7 +35,7 @@ public:
         if(forward_segments == 0)
         {
           forward_finish_time = millis();
-          Serial.print("Forward_done ");
+          //Serial.print("Forward_done ");
           for (int i = 0; i < num_headings; ++i)
             actual_crossroad[i] = false;
         }
@@ -145,7 +145,7 @@ private:
 
   // Navigation variables
   int actual_heading = 0;   // actual heading of the robot based on rotating and init heading
-  bool actual_crossroad[num_headings];    // Crossroad shape
+  bool actual_crossroad[num_headings] = { true, false, true, false};    // Crossroad shape - initial shape is path to the north and path to the east
 
   Movement *mov;
   Sensors *sens;
