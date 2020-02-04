@@ -15,6 +15,7 @@ public:
     }
 
     void init_from_itin() {
+        state_ = state::startup;
         itin_->reset();
         pos_ = itin_->get_start_waypoint().pt;
         heading_ = itin_->get_start_heading();
@@ -119,7 +120,7 @@ private:
     }
 
     bool turn(state turn_state, bool &button_pressed) {
-
+        Serial.print(amount_);
         bool turn_finished = turn_state == state::turn_left ? move_->rotate_left(amount_) : move_->rotate_right(amount_);
         if (turn_finished) {
             update_heading(heading_, turn_state, amount_);
