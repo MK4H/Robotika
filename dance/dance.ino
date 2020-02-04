@@ -20,7 +20,7 @@ MoveManager *move_manager;
 Driver *driver;
 int state = st_stop;
 bool dioda = false;
-const char* choreo = "A1N d1 t120 d4 t0 a4 t0 a1 t0 c2 t0 1c t0 1d t0 1c t0";
+const char* choreo = "1AN b2 t0 c3 t100 d4 t150 c3 t200 b2 t200 a1 t0";
 //const char* choreo = "A1N c2 t120";
 
 void setup() {

@@ -164,7 +164,7 @@ private:
 
   // Navigation variables
   int actual_heading = 0;   // actual heading of the robot based on rotating and init heading
-  bool actual_crossroad[num_headings] = { true, false, false, true};    // Crossroad shape - initial shape is path to the north and path to the east
+  bool actual_crossroad[num_headings] = { true, true, true, true};    // Crossroad shape - initial shape assumed full crossroad
 
   Movement *mov;
   Sensors *sens;
