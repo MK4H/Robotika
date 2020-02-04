@@ -20,8 +20,10 @@ public:
         pos_ = itin_->get_start_waypoint().pt;
         heading_ = itin_->get_start_heading();
         target_ = itin_->get_target_waypoint();
+        move_->reset();
         move_->SetHeading(heading_);
         going_home_ = false;
+        button_pressed_ = false;
     }
 
     void loop() {
@@ -29,15 +31,10 @@ public:
             button_pressed_ = true;
         }
 
-        if (button_pressed_) {
-            Serial.println("Button is pressed");
-        }
-
         // State machine
         switch (state_)
         {
         case state::startup: 
-            Serial.print("startup");
             if (check_and_reset(button_pressed_)) {
                 itin_->reset();
                 start_time_ = millis();
@@ -45,31 +42,26 @@ public:
             }
             break;
         case state::forward:
-            Serial.print("forward");
             if (move_forward(button_pressed_)) {
                 follow_path();
             }
             break;
         case state::turn_left:
-            Serial.print("turnleft");
             if (turn(state::turn_left, button_pressed_)) {
                 follow_path();
             }
             break;
         case state::turn_right:
-            Serial.print("turnright");
             if (turn(state::turn_right, button_pressed_)) {
                 follow_path();
             }
             break;
         case state::wait:
-            Serial.print("wait");
             if (wait(button_pressed_)) {
                 follow_path();
             }
             break;
         case state::finished:
-            Serial.print("finished");
             if (check_and_reset(button_pressed_)) {
                 go_home();
                 follow_path();
@@ -112,15 +104,14 @@ private:
     }
 
     bool move_forward(bool &button_pressed) {
-        if (check_and_reset(button_pressed)) {
-            update_pos(pos_, heading_, amount_ - move_->get_forward_segments());
-            go_home();
-            return true;
-        }
+        
 
         bool move_finished = move_->move_forward(amount_);
         if (move_finished) {
             update_pos(pos_, heading_, amount_);
+            if (check_and_reset(button_pressed)) {
+                go_home();
+            }
         }
         return move_finished;
     }
@@ -154,14 +145,12 @@ private:
             // Arrived at the target, it's time to move on
             if (going_home_) {
                 Serial.println("GOING HOME");
-                if (heading_ == itin_->get_start_heading()) {
+                if (heading_ != itin_->get_start_heading()) {
                     rotate(pos_, heading_, itin_->get_start_heading(), state_, amount_);
                     return;
                 }
                 
-                going_home_ = false;
-                amount_ = 0;
-                state_ = state::startup;
+                init_from_itin();
                 return;
             }
             

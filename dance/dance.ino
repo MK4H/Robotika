@@ -20,7 +20,7 @@ MoveManager *move_manager;
 Driver *driver;
 int state = st_stop;
 bool dioda = false;
-const char* choreo = "A1N c2 t120 d4 t0 b5 t0";
+const char* choreo = "A1N d1 t120 d4 t0 a4 t0 a1 t0 c2 t0 1c t0 1d t0 1c t0";
 //const char* choreo = "A1N c2 t120";
 
 void setup() {
@@ -66,20 +66,10 @@ void loop() {
   sens->update();
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
-  if (button.was_pressed()) {
-    Serial.println("btn pressed");
-    stage = 0;
-    if (state == st_stop) {
-      state = st_drive;
-    }
-    else {
-      state = st_stop;
-    }
-  }
 
   if (button.was_long_pressed()) {
-    state = st_stop;
     driver->init_from_itin();
+    button.reset_memory();
   }
   
 
@@ -116,10 +106,7 @@ void loop() {
   //WHEN YOU ARE READY TO HAND OFF CONTROL TO THE DRIVER, JUST START CALLING THE LOOP
   // The itinerary has to be already parsed and filled, from wherever
   // BUTTON RESET MEMORY MUST BE CALLED AFTER THE driver->loop() call
-  if (state == st_drive) {
-    Serial.print("-in drive-ln\n");
-    driver->loop();
-  }
+  driver->loop();
   button.reset_memory();
   
 

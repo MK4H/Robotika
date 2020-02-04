@@ -105,7 +105,19 @@ public:
 
       Serial.print("Quarters to rotate: ");
       Serial.println(quarters);
+
+      Serial.print("Heading: ");
+      Serial.println(actual_heading);
       
+      for (int i = 1; i <= num_headings; ++i)
+      {
+        if(actual_crossroad[(actual_heading - i + 4) % num_headings])
+          {
+            Serial.print(i);
+            Serial.println(" is true ");
+          }
+      }
+
       for (int i = 1; i <= num_headings; ++i)
       {      
         if(actual_crossroad[(actual_heading - i + 4) % num_headings])
@@ -115,7 +127,7 @@ public:
       Serial.print("CrossLines: ");
       Serial.println(rotate_cross_lines);
       
-      actual_heading = (actual_heading + quarters) % num_headings;
+      actual_heading = (actual_heading - quarters + 4) % num_headings;
     }
     
     if(turn_right())
@@ -161,17 +173,14 @@ private:
     // TODO left_forward and right_forward seems to be broken
     if(sens->is_black(c_left) && sens->is_white(f_left))
     {
-      Serial.print("L ");
-      mov->left_forward(faster, medium);
+      mov->left_forward(faster, stopped);
     }
     else if(sens->is_black(c_right) && sens->is_white(f_right))
     {
-      Serial.print("R ");
-      mov->right_forward(faster, medium);
+      mov->right_forward(faster, stopped);
     }
     else
     {
-      Serial.print("F ");
       mov->forward(faster);
     }
   }
