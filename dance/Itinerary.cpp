@@ -64,14 +64,17 @@ public:
 class Itinerary {
 public:
   result parse_input(Reader &in, const char ** error_msg) {
-    if (get_starting_state(in, start_wp_, start_head_, error_msg) != r_ok) {
+    Waypoint n_start_wp;
+    headings n_start_heading;
+    Waypoint_Node *n_point_list;
+    if (get_starting_state(in, n_start_wp, n_start_heading, error_msg) != r_ok) {
       return r_err;
     }
     result res;
     Point new_point;
     bool new_col_first;
     unsigned new_tim;
-    Waypoint_Node ** next_link = &point_list_;
+    Waypoint_Node ** next_link = &n_point_list;
     while ((res = get_next_target(in, new_point, new_col_first, new_tim, error_msg)) == r_ok) {
       Serial.print(new_point.col);
       Serial.print(", ");
@@ -81,11 +84,14 @@ public:
     }
 
     if (res == r_ok || res == r_eof) {
+      start_wp_ = n_start_wp;
+      start_head_ = n_start_heading;
+      point_list_ = n_point_list;
       target_ = point_list_;
       return r_ok;
     }
     else {
-      delete_list();
+      delete_list(n_point_list);
       return r_err;
     }
   }
@@ -99,7 +105,7 @@ public:
   
 
   ~Itinerary() {
-    delete_list();
+    delete_list(point_list_);
   }
   
 
@@ -335,10 +341,10 @@ private:
     return r_ok;
   }
 
-  void delete_list() {
-    while (point_list_) {
-      Waypoint_Node * to_delete = point_list_;
-      point_list_ = point_list_->next;
+  void delete_list(Waypoint_Node *point_list) {
+    while (point_list) {
+      Waypoint_Node * to_delete = point_list;
+      point_list = point_list->next;
       delete(to_delete);
     }
   }
