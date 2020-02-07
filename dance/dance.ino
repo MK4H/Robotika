@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include "Enums.cpp"
 #include "Button.cpp"
 #include "Sensors.cpp"
@@ -18,39 +19,14 @@ Button button;
 Itinerary itin;
 MoveManager *move_manager;
 Driver *driver;
-int state = st_stop;
+int state = st_parsing;
 bool dioda = false;
 const char* choreo = "1AN b2 t0 c3 t100 d4 t150 c3 t200 b2 t200 a1 t0";
 //const char* choreo = "A1N c2 t120";
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  delay(1000);
-  Serial.println("setup start");
-  mov = new Movement();
-  sens = new Sensors();
-  move_manager = new MoveManager(mov, sens);
- 
-  StringReader rdr(choreo);
-  Serial.println("reader rdy");
-  char * err_msg;
-  Serial.println("setup before parse");
-
-  Serial.println("read finished");
-  if (itin.parse_input(rdr , &err_msg) != r_ok) {
-    Serial.println(err_msg);
-  }
-  Serial.println("setup before driver");
-  driver = new Driver(&itin, move_manager, &button);
-  Serial.println("exception when init driver baby");
-
+void init_pins() {
   mov->attach(left_pin, right_pin);
-  Serial.println("setup before driver init from itin");
-  driver->init_from_itin();
-
-  Serial.println("setup complete");
-
+  // pins
   pinMode(button_pin, INPUT_PULLUP);
   pinMode(diode_pin, OUTPUT);
   pinMode(3, INPUT_PULLUP);
@@ -60,6 +36,44 @@ void setup() {
   pinMode(7, INPUT_PULLUP);
 }
 
+void init_choreography() {
+  Serial.println("Reading from EEPROM");
+  char * err_msg;
+  EEPROMReader prom_reader;
+  if (itin.parse_input(prom_reader, &err_msg) != r_ok) {
+    // Parsing from EEPROM failed, parse the default choreo
+    Serial.println(err_msg);
+    Serial.println("EEPROM choreo not found - using default");
+    StringReader def_reader(choreo);
+    if (itin.parse_input(def_reader, &err_msg) != r_ok) {
+      Serial.println(err_msg);
+      Serial.println("FATAL ERROR, DEFAULT CHOREOGRAPHY DOES NOT WORK");
+    }
+  }
+  else{
+    Serial.println("EEPROM choreo loaded");
+  }
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  Serial.println("setup start");
+  
+  mov = new Movement();
+  sens = new Sensors();
+  move_manager = new MoveManager(mov, sens);
+
+  init_pins();
+
+  init_choreography();
+
+  driver = new Driver(&itin, move_manager, &button);
+  driver->init_from_itin();
+  
+  Serial.println("setup complete");
+}
+
 int stage = 0;
 void loop() {
   // update info from ir sensors
@@ -67,13 +81,63 @@ void loop() {
   // button press makes something happen..
   button.notify_actual_state(!digitalRead(button_pin));
 
-  if (button.was_long_pressed()) {
-    driver->init_from_itin();
-    button.reset_memory();
+
+  if (state == st_parsing) {
+    if (button.was_unpressed()) {
+      if (button.was_over_5_pressed()) {  
+        // clear EEPROM
+        Serial.println("over 5 pressed");
+        for (int i = 0 ; i < EEPROM.length() ; i++) {
+          EEPROM.update(i, 255);
+        }
+      }
+      else {
+        // Start driving
+        driver->init_from_itin();
+        driver->drive_immediately();
+        state = st_driving;
+      }
+    }
+
+    if(Serial.available() > 0){
+      String fromSerial = Serial.readString();
+      // +2 for magic number 0 at index 0 and \0 at the end of the string
+      if (fromSerial.length() + 2 >= EEPROM.length()) {
+        Serial.println("String too long for EEPROM!");
+        return;
+      }
+
+      char * err_msg;
+      char * charString = fromSerial.c_str();
+      StringReader reader{charString};
+      if (itin.parse_input(reader, &err_msg) != r_ok) {
+        Serial.println(err_msg);
+      }
+      else {
+        // Set magic number
+        EEPROM.update(0,0);
+        int eeprom_len = EEPROM.length();
+        int i = 1; 
+        for (; *charString != '\0'; charString++, i++) {
+          EEPROM.update(i, *charString);
+        }
+
+        EEPROM.update(i, '\0');
+      }
+    }
   }
-  
-
-
+  else { 
+    if (button.was_2_to_5_pressed()) {
+      Serial.println("2 to 5 pressed");
+      button.reset_memory();
+      state = st_parsing;
+      return;
+    }
+    driver->loop();
+    
+  }
+ 
+  button.reset_memory();
   // Movement manager usage example - go 2 segment forward, than rotate by one quarter to the left and go another two segments forward
   // if (state == st_stop) {
   //   mov->stop();
@@ -106,11 +170,10 @@ void loop() {
   //WHEN YOU ARE READY TO HAND OFF CONTROL TO THE DRIVER, JUST START CALLING THE LOOP
   // The itinerary has to be already parsed and filled, from wherever
   // BUTTON RESET MEMORY MUST BE CALLED AFTER THE driver->loop() call
-  driver->loop();
-  button.reset_memory();
+;
   
 
-  /*if(button.was_long_pressed() ){
+  /*if(button.was_2_to_5_pressed() ){
     if(dioda){
       digitalWrite(diode_pin, HIGH);
       }

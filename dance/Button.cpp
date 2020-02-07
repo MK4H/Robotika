@@ -11,7 +11,8 @@ public:
         is_pressed_ = false;
         was_pressed_ = false;
         was_unpressed_ = false;
-        was_long_pressed_ = false;
+        was_2_to_5_pressed_ = false;
+        was_over_5_pressed_ = false;
       }
 
       void notify_actual_state(bool is_pressed_now){
@@ -25,8 +26,13 @@ public:
           was_unpressed_ = true;
 
           unsigned long CurrentTime = millis();
-          if (CurrentTime - PressedTime > 3000){
-            was_long_pressed_ = true;
+
+          unsigned long ElapsedTime = CurrentTime - PressedTime;
+          if (ElapsedTime > 2000 && ElapsedTime < 5000){
+            was_2_to_5_pressed_ = true;
+          }
+          else if(ElapsedTime >= 5000) {
+            was_over_5_pressed_ = true;
           }
 
         }
@@ -43,20 +49,27 @@ public:
         return was_unpressed_;
       }
 
-      bool was_long_pressed(){
-        return was_long_pressed_;
+      bool was_2_to_5_pressed(){
+        return was_2_to_5_pressed_;
       }
+
+      bool was_over_5_pressed() {
+        return was_over_5_pressed_;
+      }
+
 
       void reset_memory(){
         was_pressed_ = false;
         was_unpressed_ = false;
-        was_long_pressed_ = false;
+        was_2_to_5_pressed_ = false;
+        was_over_5_pressed_ = false;
       }
       
 private:
   bool is_pressed_;
   bool was_pressed_;
-  bool was_long_pressed_;
+  bool was_2_to_5_pressed_;
+  bool was_over_5_pressed_;
   bool was_unpressed_;
   unsigned long PressedTime = millis();
   };

@@ -11,7 +11,7 @@ public:
     Driver(Itinerary * itin, MoveManager * move, Button *button)
         : itin_(itin), move_(move), butt_(button), start_time_(0),
           pos_(), heading_(north), target_(), state_(state::startup), 
-          going_home_(false), button_pressed_(false) {
+          going_home_(false), button_released_(false) {
     }
 
     void init_from_itin() {
@@ -23,46 +23,51 @@ public:
         move_->reset();
         move_->SetHeading(heading_);
         going_home_ = false;
-        button_pressed_ = false;
+        button_released_ = false;
+    }
+
+    void drive_immediately() {
+        drive_immediately_ = true;
     }
 
     void loop() {
-        if (butt_->was_pressed()) {
-            button_pressed_ = true;
+        if (butt_->was_unpressed()) {
+            button_released_ = true;
         }
 
         // State machine
         switch (state_)
         {
         case state::startup: 
-            if (check_and_reset(button_pressed_)) {
+            if (check_and_reset(button_released_) || check_and_reset(drive_immediately_)) {
                 itin_->reset();
+                target_ = itin_->get_target_waypoint();
                 start_time_ = millis();
                 follow_path();
             }
             break;
         case state::forward:
-            if (move_forward(button_pressed_)) {
+            if (move_forward(button_released_)) {
                 follow_path();
             }
             break;
         case state::turn_left:
-            if (turn(state::turn_left, button_pressed_)) {
+            if (turn(state::turn_left, button_released_)) {
                 follow_path();
             }
             break;
         case state::turn_right:
-            if (turn(state::turn_right, button_pressed_)) {
+            if (turn(state::turn_right, button_released_)) {
                 follow_path();
             }
             break;
         case state::wait:
-            if (wait(button_pressed_)) {
+            if (wait(button_released_, drive_immediately_)) {
                 follow_path();
             }
             break;
         case state::finished:
-            if (check_and_reset(button_pressed_)) {
+            if (check_and_reset(button_released_)) {
                 go_home();
                 follow_path();
             }
@@ -90,7 +95,8 @@ private:
     int amount_;
 
     bool going_home_;
-    bool button_pressed_;
+    bool button_released_;
+    bool drive_immediately_;
 
     bool check_and_reset(bool &var) {
         bool old = var;
@@ -103,27 +109,27 @@ private:
         target_ = itin_->get_start_waypoint();
     }
 
-    bool move_forward(bool &button_pressed) {
+    bool move_forward(bool &button_released) {
         
 
         bool move_finished = move_->move_forward(amount_);
         if (move_finished) {
             update_pos(pos_, heading_, amount_);
-            if (check_and_reset(button_pressed)) {
+            if (check_and_reset(button_released)) {
                 go_home();
             }
         }
         return move_finished;
     }
 
-    bool turn(state turn_state, bool &button_pressed) {
+    bool turn(state turn_state, bool &button_released) {
         Serial.print(amount_);
         bool turn_finished = turn_state == state::turn_left ? move_->rotate_left(amount_) : move_->rotate_right(amount_);
         if (turn_finished) {
             update_heading(heading_, turn_state, amount_);
             // We cannot reset the robot during a turn due to the implementation
             // Check after the turn is finished
-            if (check_and_reset(button_pressed)) {
+            if (check_and_reset(button_released)) {
                 go_home();
             }
         }
@@ -131,13 +137,13 @@ private:
         return turn_finished;
     }
 
-    bool wait(bool &button_pressed) {
-        if (check_and_reset(button_pressed)) {
+    bool wait(bool &button_released, bool &drive_immediately) {
+        if (check_and_reset(button_released)) {
             go_home();
             return true;
         }
         
-        return time_passed(target_.tim);
+        return time_passed(target_.tim) || check_and_reset(drive_immediately);
     }
 
     void follow_path() {

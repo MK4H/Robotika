@@ -64,21 +64,24 @@ public:
 class Itinerary {
 public:
   result parse_input(Reader &in, const char ** error_msg) {
+    if (!in.move_next()) {
+      *error_msg = "Unexpected empty input";
+      return r_err;
+    }
+
     Waypoint n_start_wp;
     headings n_start_heading;
     Waypoint_Node *n_point_list;
     if (get_starting_state(in, n_start_wp, n_start_heading, error_msg) != r_ok) {
       return r_err;
     }
+
     result res;
     Point new_point;
     bool new_col_first;
     unsigned new_tim;
     Waypoint_Node ** next_link = &n_point_list;
     while ((res = get_next_target(in, new_point, new_col_first, new_tim, error_msg)) == r_ok) {
-      Serial.print(new_point.col);
-      Serial.print(", ");
-      Serial.println(new_point.row);
       *next_link = new Waypoint_Node(Waypoint(new_point, new_col_first, new_tim), nullptr);
       next_link = &((*next_link)->next);
     }
@@ -148,7 +151,7 @@ private:
       return r_eof;
     }
 
-    while (isWhitespace(in.get_current())) {
+    while (isSpace(in.get_current())) {
       if (!in.move_next()) {
         return r_eof;
       }
@@ -284,7 +287,9 @@ private:
   }
 
   static result get_next_target(Reader &in, Point &next_target, bool &col_first, unsigned &tar_time, const char ** error_msg) {
-    if (in.get_current() != '\0' && !isWhitespace(in.get_current())) {
+    if (in.get_current() != '\0' && !isSpace(in.get_current())) {
+      Serial.print(byte(in.get_current()));
+      Serial.print(in.text_position());
       *error_msg = "Expected whitespace";
       return r_err;
     }
