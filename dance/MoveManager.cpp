@@ -35,7 +35,6 @@ public:
         if(forward_segments == 0)
         {
           forward_finish_time = millis();
-          //Serial.print("Forward_done ");
           for (int i = 0; i < num_headings; ++i)
             actual_crossroad[i] = false;
         }
@@ -72,13 +71,6 @@ public:
       if (quarters == 0)
         return true;
 
-      // Crossroad info print
-      /*for (int i = 1; i <= num_headings; ++i)
-      {
-          Serial.print(i);
-          Serial.print(" is true ");
-      }*/
-      
       for (int i = 1; i <= num_headings; ++i)
       {      
         if(actual_crossroad[(actual_heading + i) % num_headings])
@@ -103,36 +95,17 @@ public:
       if (quarters == 0)
         return true;
 
-      Serial.print("Quarters to rotate: ");
-      Serial.println(quarters);
-
-      Serial.print("Heading: ");
-      Serial.println(actual_heading);
-      
-      for (int i = 1; i <= num_headings; ++i)
-      {
-        if(actual_crossroad[(actual_heading - i + 4) % num_headings])
-          {
-            Serial.print(i);
-            Serial.println(" is true ");
-          }
-      }
-
       for (int i = 1; i <= num_headings; ++i)
       {      
         if(actual_crossroad[(actual_heading - i + 4) % num_headings])
           rotate_cross_lines +=  quarters / 4 + ((quarters % 4 >= i) ? 1 : 0);
       }
 
-      Serial.print("CrossLines: ");
-      Serial.println(rotate_cross_lines);
-      
       actual_heading = (actual_heading - quarters + 4) % num_headings;
     }
     
     if(turn_right())
     {
-      Serial.println("Turning right completed");
       reset();
       return true;
     }

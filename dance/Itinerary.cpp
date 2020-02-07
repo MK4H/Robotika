@@ -47,6 +47,23 @@ public:
   {
 
   }
+
+  void print_to_serial() {
+    Serial.print('[');
+    if (col_first) {
+      Serial.print(char('A' + pt.col));
+      Serial.print(", ");
+      Serial.print(1 + pt.row);
+    }
+    else {
+      Serial.print(1 + pt.row);
+      Serial.print(", ");
+      Serial.print(char('A' + pt.col));
+    }
+    Serial.print(", t");
+    Serial.print(tim);
+    Serial.print(']');
+  }
 };
 
 class Waypoint_Node {
@@ -133,6 +150,17 @@ public:
 
   void reset() {
     target_ = point_list_;
+  }
+
+  void print_to_serial() {
+    Serial.print("Starting position: "); 
+    start_wp_.print_to_serial();
+    Serial.println();
+    
+    for (Waypoint_Node * c_node = point_list_; c_node; c_node = c_node->next) {
+      c_node->wp.print_to_serial();
+      Serial.println();
+    }
   }
 private:
 

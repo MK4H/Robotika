@@ -24,6 +24,7 @@ public:
         move_->SetHeading(heading_);
         going_home_ = false;
         button_released_ = false;
+        drive_immediately_ = false;
     }
 
     void drive_immediately() {
@@ -40,6 +41,7 @@ public:
         {
         case state::startup: 
             if (check_and_reset(button_released_) || check_and_reset(drive_immediately_)) {
+                Serial.println("Starting next run.");
                 itin_->reset();
                 target_ = itin_->get_target_waypoint();
                 start_time_ = millis();
@@ -68,13 +70,13 @@ public:
             break;
         case state::finished:
             if (check_and_reset(button_released_)) {
+                Serial.println("Going home.");
                 go_home();
                 follow_path();
             }
             break;
         default:
-            Serial.print("Unknown state v driver loop");
-            //TODO: Error
+            Serial.print("Unknown state in driver loop");
             break;
         }
     }
@@ -123,7 +125,6 @@ private:
     }
 
     bool turn(state turn_state, bool &button_released) {
-        Serial.print(amount_);
         bool turn_finished = turn_state == state::turn_left ? move_->rotate_left(amount_) : move_->rotate_right(amount_);
         if (turn_finished) {
             update_heading(heading_, turn_state, amount_);
@@ -150,7 +151,6 @@ private:
         while (!get_next_move(pos_, heading_, target_, state_ , amount_)) {
             // Arrived at the target, it's time to move on
             if (going_home_) {
-                Serial.println("GOING HOME");
                 if (heading_ != itin_->get_start_heading()) {
                     rotate(pos_, heading_, itin_->get_start_heading(), state_, amount_);
                     return;
@@ -172,6 +172,7 @@ private:
             }
             else {
                 // The itinerary is finished
+                Serial.println("Finished run.");
                 state_ = state::finished;
                 return;
             }
@@ -201,15 +202,13 @@ private:
             pos.col -= amount;
             break;
         default:
-            //TODO: Error
+            Serial.println("Unknown heading.");
             break;
         }
     }
 
     static void update_heading(headings &heading, state turn_state, int amount) {
-        Serial.print("Init heading: "); Serial.println(heading);
         heading = (heading + num_headings + (turn_state == state::turn_left ? amount : -amount)) % num_headings;
-        Serial.print("Result heading: "); Serial.println(heading);
     }
 
     /**
@@ -219,45 +218,30 @@ private:
      *     false if we have reached the `target`.
      */
     static bool get_next_move(Point c_pos, headings c_head, Waypoint target, state &ret_state, int &ret_amount) {
-        Serial.print("Current position: ");
-        Serial.print(c_pos.col);
-        Serial.print(", ");
-        Serial.println(c_pos.row);
-        
-        Serial.print("Target position: ");
-        Serial.print(target.pt.col);
-        Serial.print(", ");
-        Serial.println(target.pt.row);
 
         // If the robot is at the target position
         if ((c_pos.col == target.pt.col) && (c_pos.row == target.pt.row)) {
             // Arrived at target, ready to contiue
-            Serial.print("Arrived");
             return false;
         }
 
         // If the robot should go to target COLUMN first and is not at the COLUMN
         if (target.col_first && (c_pos.col != target.pt.col)) {
-            Serial.print("First to column");
             get_to_column(c_pos, c_head, target, ret_state, ret_amount);
         }
         // If it should go to target ROW first and is not at the ROW
         else if (!target.col_first && (c_pos.row != target.pt.row)) {
-            Serial.print("First to row");
             get_to_row(c_pos, c_head, target, ret_state, ret_amount);
         }
         // Is at the first target coord, check if the second is columns
         else if (c_pos.col != target.pt.col) {
-            Serial.print("Second to column");
             get_to_column(c_pos, c_head, target, ret_state, ret_amount);
         }
         // Or if it is rows
         else if (c_pos.row != target.pt.row) {
-            Serial.print("Second to row");
             get_to_row(c_pos, c_head, target, ret_state, ret_amount);
         }
         else {
-            //TODO: Error
             Serial.print("Error next move");
         }
         return true;
@@ -278,9 +262,6 @@ private:
         int half_rotation = num_headings/2;
         int change = to - from;
         
-        Serial.print("Change: ");
-        Serial.println(change);
-
         if (change < -half_rotation) {
             change = -half_rotation - change;
         }
@@ -288,9 +269,6 @@ private:
             change = half_rotation - change;
         }
         
-        Serial.print("Ret amount: ");
-        Serial.println(change);
-
         ret_amount = change;
 
         if (change == half_rotation || change == -half_rotation) {
@@ -324,8 +302,6 @@ private:
             rotate(c_pos, c_head, west, ret_state, ret_amount);
         }
         else if (diff > 0 && c_head != east) {
-            Serial.print("Heading: ");
-            Serial.println(c_head);
             rotate(c_pos, c_head, east, ret_state, ret_amount);
         }
         else {
